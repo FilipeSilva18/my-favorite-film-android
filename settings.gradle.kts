@@ -31,3 +31,5 @@ rootProject.name = "MyFavoriteFilms"
 
 include(":core:common")
 include(":core:network")
+include(":core:analytics")
+include(":core:analytics-firebase")
