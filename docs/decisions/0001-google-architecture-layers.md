@@ -1,31 +1,31 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0001 — Camadas do guia de arquitetura do Google
+# 0001 — Layers from Google's architecture guide
 
-## Contexto e problema
+## Context and problem statement
 
-O app precisa de uma divisão de responsabilidades conhecida pelo mercado e pelos agentes, com fluxo de dados unidirecional e estado observável.
+The app needs a separation of responsibilities that the industry and AI agents already know, with unidirectional data flow and observable state.
 
-## Opções consideradas
+## Considered options
 
-* Camadas do guia oficial (UI, Domain, Data) com os nomes `presentation`, `domain` e `data`
-* MVP/MVC com Activities e Fragments
-* Arquitetura própria sem referência externa
+* Layers from the official guide (UI, Domain, Data) named `presentation`, `domain` and `data`
+* MVP/MVC with Activities and Fragments
+* A custom architecture with no external reference
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Camadas do guia oficial com os nomes `presentation`, `domain` e `data`, porque alinha o projeto à documentação do Google (UDF, `StateFlow`, repositórios, use cases), o que facilita onboarding e revisão.
+Chosen option: Layers from the official guide named `presentation`, `domain` and `data`, because it aligns the project with Google's documentation (UDF, `StateFlow`, repositories, use cases), which makes onboarding and review easier.
 
-### Consequências
+### Consequences
 
-* Bom: Vocabulário comum com a documentação oficial e com o Now in Android
-* Bom: UDF: estado desce, eventos sobem
-* Ruim: Mais arquivos por funcionalidade do que um MVVM sem camadas
+* Good: Shared vocabulary with the official documentation and Now in Android
+* Good: UDF: state flows down, events flow up
+* Bad: More files per feature than layerless MVVM
 
-### Confirmação
+### Confirmation
 
 Konsist: `ViewModel subclasses end with ViewModel and live in presentation`, `presentation never imports the data layer`.

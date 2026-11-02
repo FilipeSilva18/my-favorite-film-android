@@ -1,134 +1,134 @@
-# Movies App — Documento de Arquitetura
+# MyFavoriteFilms — Architecture Document
 
-> Versão 1.11 · 01/11/2026 · projeto **MyFavoriteFilms** (`com.faas.myfavoritefilms`)
-> App Android de filmes (API TMDB) em Jetpack Compose, monorepo multi-módulo, Clean Architecture sobre o guia oficial de arquitetura do Google, DI com **Dagger 2 puro**.
+> Version 1.12 · 2026-11-02 · project **MyFavoriteFilms** (`com.faas.myfavoritefilms`)
+> Android movie app (TMDB API) in Jetpack Compose, multi-module monorepo, Clean Architecture on top of Google's official architecture guide, DI with **pure Dagger 2**.
 
-Este documento descreve **como o projeto é estruturado e por quê**. Traz os contratos, as regras e os trechos de código representativos.
+This document describes **how the project is structured and why**. It holds the contracts, the rules and representative code excerpts.
 
-**Mapa da documentação:** [`AGENTS.md`](AGENTS.md) (regras em uma página, lido por agentes de IA) · [`docs/`](docs/README.md) (onboarding, guias passo a passo, referência, diagramas) · [`docs/decisions/`](docs/decisions/README.md) (uma ADR por arquivo) · [`.agents/skills/`](.agents/skills) (procedimentos para agentes). Este documento continua sendo a referência completa com código.
+**Documentation map:** [`README.md`](README.md) (overview) · [`AGENTS.md`](AGENTS.md) (rules on one page, read by AI agents) · [`docs/`](docs/README.md) (onboarding, how-to guides, reference, diagrams) · [`docs/decisions/`](docs/decisions/README.md) (one ADR per file) · [`.agents/skills/`](.agents/skills) (procedures for agents). This document remains the complete reference with code.
 
-**Estado atual (v1.11):** documentação para pessoas e agentes de IA em padrões abertos: `AGENTS.md` aninhados, skills em `.agents/skills/` (Agent Skills), ADRs em `docs/decisions/` (MADR), guias em `docs/` (Diátaxis), scripts de verificação e hook de segredos em `scripts/`. Antes disso, repositórios falam com data sources local/remoto, nunca direto com DAO ou Retrofit (ADR-18); favoritos como feature com módulo `api` público + `domain`/`data`/`presentation` (ADR-17), no mesmo padrão das outras features, e tracking assíncrono numa fila serializada (seção 7.11); antes disso, busca em linguagem natural com IA (Gemini via Firebase AI Logic, seção 7.13) e app funcional com 4 features (`movies`, `moviedetail` com SDUI incluindo elenco e trailers, `favorites`, `settings`), bottom bar, **preferências de tema e idioma com DataStore** (seção 7.12), estratégia de testes completa (seção 13) e **tracking com Firebase Analytics + Crashlytics** (seção 7.11). Quando código e documento divergirem, **o código é a fonte da verdade** e este documento deve ser atualizado.
+**Current state (v1.12):** all documentation in English and a project README. Before that: documentation for people and AI agents in open standards (nested `AGENTS.md`, skills in `.agents/skills/`, ADRs in `docs/decisions/` in MADR format, guides in `docs/` organized by Diátaxis, verification scripts and a secret-blocking hook in `scripts/`); repositories talking to local/remote data sources, never directly to a DAO or Retrofit (ADR-18); favorites as a feature with a public `api` module + `domain`/`data`/`presentation` (ADR-17); asynchronous tracking on a serialized queue (section 7.11); natural-language AI search (Gemini through Firebase AI Logic, section 7.13); and a working app with 4 features (`movies`, `moviedetail` with SDUI including cast and trailers, `favorites`, `settings`), bottom bar, **theme and language preferences with DataStore** (section 7.12), a complete testing strategy (section 13) and **tracking with Firebase Analytics + Crashlytics** (section 7.11). When code and document disagree, **the code is the source of truth** and this document must be updated.
 
 ---
 
-## Sumário
+## Contents
 
-1. [Escopo do app](#1-escopo-do-app)
-2. [Decisões de arquitetura](#2-decisões-de-arquitetura)
+1. [App scope](#1-app-scope)
+2. [Architecture decisions](#2-architecture-decisions)
 3. [Stack](#3-stack)
-4. [Estrutura do monorepo](#4-estrutura-do-monorepo)
-5. [Grafo e regras de dependência](#5-grafo-e-regras-de-dependência)
-6. [Integração com a TMDB](#6-integração-com-a-tmdb)
-7. [Módulos core](#7-módulos-core) (inclui SDUI 7.10, tracking 7.11 e preferências 7.12)
-8. [Feature: movies (lista + busca)](#8-feature-movies-lista--busca)
-9. [Feature: moviedetail (detalhe + favoritar)](#9-feature-moviedetail-detalhe--favoritar)
-10. [Navegação, DI e módulo app](#10-navegação-di-e-módulo-app)
-11. [Tratamento de erros](#11-tratamento-de-erros)
-12. [Build: Gradle, build-logic e convention plugins](#12-build-gradle-build-logic-e-convention-plugins)
-13. [Testes](#13-testes)
-14. [Convenções de código](#14-convenções-de-código)
-15. [Passo a passo e estado do projeto](#15-passo-a-passo-e-estado-do-projeto)
-16. [Evoluções futuras](#16-evoluções-futuras)
+4. [Monorepo structure](#4-monorepo-structure)
+5. [Dependency graph and rules](#5-dependency-graph-and-rules)
+6. [TMDB integration](#6-tmdb-integration)
+7. [Core modules](#7-core-modules) (includes SDUI 7.10, tracking 7.11 and preferences 7.12)
+8. [Feature: movies (list + search)](#8-feature-movies-list--search)
+9. [Feature: moviedetail (detail + favorite)](#9-feature-moviedetail-detail--favorite)
+10. [Navigation, DI and the app module](#10-navigation-di-and-the-app-module)
+11. [Error handling](#11-error-handling)
+12. [Build: Gradle, build-logic and convention plugins](#12-build-gradle-build-logic-and-convention-plugins)
+13. [Tests](#13-tests)
+14. [Code conventions](#14-code-conventions)
+15. [Roadmap and project status](#15-roadmap-and-project-status)
+16. [Future evolutions](#16-future-evolutions)
 
 ---
 
-## 1. Escopo do app
+## 1. App scope
 
-| Funcionalidade | Descrição | Onde vive |
+| Feature | Description | Where it lives |
 |---|---|---|
-| Lista de filmes | Filmes populares com rolagem infinita (paginação) | `feature:movies` |
-| Busca por título | Campo de busca na própria tela da lista. Com busca vazia, mostra populares. Com texto, mostra o resultado da busca | `feature:movies` |
-| Busca com IA | Modo "Buscar com IA": o usuário descreve o filme ("suspense dos anos 90 bem avaliado"), o Gemini converte em filtros e o app busca no `discover/movie`. Filtros viram chips removíveis; se a IA falhar, cai na busca por título | `feature:movies` + `core:ai` + `core:ai-firebase` |
-| Detalhe do filme | Pôster, backdrop, título, tagline, ano, duração, nota, gêneros e sinopse | `feature:moviedetail` |
-| Favoritar | Botão de favorito no detalhe e indicador/atalho na lista. Persistido localmente | `feature:favorites:api` (contrato) + `feature:favorites:domain`/`data` + `core:database` |
-| Tela de favoritos | Grade com todos os favoritos, mesmo card da lista principal; desfavoritar remove com animação | `feature:favorites:presentation` |
-| Informações server-driven | Bloco do detalhe montado a partir de um payload de SDUI (ficha técnica, elenco, trailers, produtoras, países, links) | `core:common/sdui` + `core:network/sdui` + `core:ui/sdui` |
-| Ajustes | Tema (sistema/claro/escuro), cor dinâmica (Android 12+) e idioma do app (sistema/pt-BR/en), persistidos com DataStore | `feature:settings:presentation` + `core:domain` + `core:data` + `core:datastore` |
+| Movie list | Popular movies with infinite scrolling (pagination) | `feature:movies` |
+| Title search | Search field on the list screen itself. With an empty query, shows popular movies. With text, shows the search results | `feature:movies` |
+| AI search | "Search with AI" mode: the user describes the movie ("90s thriller with great reviews"), Gemini turns it into filters and the app queries `discover/movie`. Filters become removable chips; if the AI fails, it falls back to title search | `feature:movies` + `core:ai` + `core:ai-firebase` |
+| Movie detail | Poster, backdrop, title, tagline, year, runtime, rating, genres and synopsis | `feature:moviedetail` |
+| Favorite | Favorite button on the detail and indicator/shortcut on the list. Persisted locally | `feature:favorites:api` (contract) + `feature:favorites:domain`/`data` + `core:database` |
+| Favorites screen | Grid with every favorite, same card as the main list; unfavoriting removes the item with an animation | `feature:favorites:presentation` |
+| Server-driven information | Detail block built from an SDUI payload (facts, cast, trailers, production companies, countries, links) | `core:common/sdui` + `core:network/sdui` + `core:ui/sdui` |
+| Settings | Theme (system/light/dark), dynamic color (Android 12+) and app language (system/pt-BR/en), persisted with DataStore | `feature:settings:presentation` + `core:domain` + `core:data` + `core:datastore` |
 
-Fora do escopo desta versão: login TMDB, cache offline dos filmes, backend real de SDUI (hoje simulado, seção 7.10).
+Out of scope for this version: TMDB login, offline cache for movies, a real SDUI backend (simulated today, section 7.10).
 
 ---
 
-## 2. Decisões de arquitetura
+## 2. Architecture decisions
 
-Resumo das decisões. Quando alguém do time perguntar "por que é assim?", a resposta está aqui; o registro completo de cada uma (contexto, opções, consequências e como é confirmada) está em [`docs/decisions/`](docs/decisions/README.md), no formato MADR, com a numeração de quatro dígitos (ADR-17 = `0017`).
+Summary of the decisions. When someone on the team asks "why is it like this?", the answer is here; the complete record of each one (context, options, consequences and how it is confirmed) is in [`docs/decisions/`](docs/decisions/README.md), in MADR format, with four-digit numbering (ADR-17 = `0017`).
 
-| # | Decisão | Motivo | Alternativa descartada |
+| # | Decision | Reason | Discarded alternative |
 |---|---|---|---|
-| ADR-01 | Camadas do guia do Google (UI, Domain, Data) com nomenclatura `presentation` / `domain` / `data` | Alinhamento com a documentação oficial: UDF, StateFlow, repositórios e use cases | — |
-| ADR-02 | **Domain obrigatório e Kotlin puro (módulo JVM)**, definindo as interfaces de repositório. O data implementa (inversão de dependência) | Clean Architecture: regra de negócio não conhece Android, Retrofit ou Room. Testes de domínio rodam na JVM, em milissegundos | Modelo do Google em que o domain depende do data (domain opcional) |
-| ADR-03 | **Cada feature tem 3 módulos Gradle** (`domain`, `data`, `presentation`) | O compilador garante as fronteiras. Uma feature não consegue importar o que não declarou | Modelo Now in Android (feature só UI e camadas em `core`). É mais simples, mas isola menos |
-| ADR-04 | **ViewModel só conversa com use cases**, nunca com repositório | Regra única, sem exceções, fácil de revisar em PR | Permissão do guia do Google para acesso direto ao repositório |
-| ADR-05 | **Feature nunca depende de outra feature.** O que é compartilhado sobe para `core` | Evita acoplamento lateral e ciclos | — |
-| ADR-06 | ~~Favoritos em `core:domain` + `core:data`~~ **Substituída pela ADR-17** | Era a única forma de duas features usarem a mesma regra sem depender uma da outra | — |
-| ADR-07 | **Paging 3** para lista e busca, com `paging-common` (JVM) no domain | A API da TMDB é paginada. Paging é a solução oficial do Google para listas paginadas | Paginação manual no ViewModel |
-| ADR-08 | **Navigation Compose com rotas type-safe** (`@Serializable`). Só o módulo `app` conhece todas as rotas | Recomendação atual do Google. As features expõem extensões de `NavGraphBuilder` | Navigation 3 (válido, ver seção 16) |
-| ADR-09 | **Dagger 2 puro** (sem Hilt) para DI, com KSP | Controle explícito do grafo: `AppComponent` raiz + `ViewModelComponent` (subcomponente por ViewModel com `SavedStateHandle`). Nada de mágica de geração agregada | Hilt (menos código, porém esconde o grafo); Koin |
-| ADR-10 | Filmes **online** (sem cache). Favoritos **offline** em Room | Escopo da v1. O cache dos filmes entra depois com `RemoteMediator` sem quebrar contratos | Offline-first completo desde o início |
-| ADR-11 | Token TMDB em `local.properties` → `BuildConfig` do `core:network` | Fora do controle de versão e simples para desenvolvimento | Hardcode no código |
-| ADR-12 | **Módulo `core:di`** com `ViewModelKey`, `DaggerViewModelFactory` e `daggerViewModel()` | É o equivalente ao que o Hilt daria pronto. Fica no core para todas as `presentation` usarem sem conhecer o `:app` | Factory por feature (duplicação) |
-| ADR-14 | **Server-Driven UI genérico no core**: modelo em `core:common`, parser em `core:network`, renderer em `core:ui`. Cada feature só produz/consome `List<SduiComponent>` | Qualquer tela pode ter blocos dirigidos pelo servidor sem duplicar parser/renderer; tipos desconhecidos são ignorados (o backend pode evoluir antes do app) | SDUI dentro da feature (não reutilizável) |
-| ADR-15 | **Componentes de lista compartilhados em `core:ui/movie`** (`MovieCardUi`, `MovieCard`, `MovieGrid`, skeletons) | Lista principal e favoritos têm o mesmo card. Pela ADR-05, o que duas features usam sobe para o core | Cada feature com seu card (duplicação) |
-| ADR-16 | **Tracking por multibinding** (`@IntoSet`/`@ElementsIntoSet`): features usam só `Analytics`/`ErrorReporter` (`core:analytics`, JVM); cada destino (Firebase, Crashlytics, Logcat em debug) se registra num `Set` | Trocar ou somar ferramentas de analytics sem tocar nas features; destinos por build type sem `if (DEBUG)`; testes com `TestAnalytics` | Chamar o SDK do Firebase direto nas features |
-| ADR-17 | **Módulo `api` para features consumidas por outras features** (hoje só `favorites`): `:feature:favorites:api` (JVM) publica `FavoriteMovie` e interfaces finas de use case (`ObserveFavoriteIdsUseCase`, `ObserveIsFavoriteUseCase`, `ToggleFavoriteUseCase`). A feature mantém os três módulos de camada da ADR-03 (`domain` implementa as interfaces do `api`, `data` tem o Room e o `FavoritesDataModule`, `presentation` tem a tela). Outras features dependem só do `:api`; só o `:app` conhece `domain`/`data`/`presentation` dos favoritos | Dependency Inversion e Interface Segregation entre módulos; o core volta a ter só regra transversal; compile avoidance; Stable Abstractions/Stable Dependencies. O `api` resolve a visibilidade entre features e as camadas resolvem a organização interna: são ortogonais | Favoritos no core (ADR-06); um único `:impl` com as camadas em pacotes (quebrava o padrão da ADR-03 e trocava a garantia do compilador pela do Konsist); `api` em todas as features (módulos vazios) |
-| ADR-18 | **Repositórios dependem de data sources, nunca direto de DAO ou de API Retrofit**: `FavoritesLocalDataSource` (encapsula o `FavoriteMovieDao`), `MoviesRemoteDataSource` (`MoviesApi`), `MovieDetailRemoteDataSource` (`MovieDetailApi`); as preferências já seguiam o padrão com o `UserPreferencesDataSource`. Data sources ficam em `data/datasource`, são `internal`, falam com uma única fonte e devolvem modelos da camada de dados (entity, DTO); o repositório mapeia para o domínio e decide a política (cache, timestamps, erros) | Formato recomendado pelo [guia de data layer](https://developer.android.com/topic/architecture/data-layer) (nomes `<Tipo>Local/RemoteDataSource`); repositório focado em orquestração; ponto de extensão para combinar remoto + local (cache offline); consistência entre os repositórios | Injetar DAO/API direto no repositório (o guia também aceita quando há uma fonte só e nenhuma lógica extra; descartado por consistência e evolução) |
-| ADR-13 | **Módulos Dagger em par público + interno**: `@Module(includes = [XxxBindsModule::class]) object XxxModule` público, bindings em `internal` | Com Dagger puro o `AppComponent` precisa referenciar o módulo; o par mantém implementações, DTOs e interceptors `internal` (regra 5.2.2) | Deixar tudo público |
+| ADR-01 | Layers from Google's guide (UI, Domain, Data) named `presentation` / `domain` / `data` | Alignment with the official documentation: UDF, StateFlow, repositories and use cases | — |
+| ADR-02 | **Mandatory pure Kotlin domain (JVM module)**, defining the repository interfaces. Data implements them (dependency inversion) | Clean Architecture: business rules don't know Android, Retrofit or Room. Domain tests run on the JVM, in milliseconds | Google's model where domain depends on data (optional domain) |
+| ADR-03 | **Each feature has 3 Gradle modules** (`domain`, `data`, `presentation`) | The compiler enforces the boundaries. A feature can't import what it didn't declare | Now in Android model (features are UI only and layers live in `core`). Simpler, but isolates less |
+| ADR-04 | **ViewModels only talk to use cases**, never to repositories | A single rule with no exceptions, easy to review in a PR | The Google guide allowing direct repository access |
+| ADR-05 | **Features never depend on other features.** Shared code moves to `core` | Avoids lateral coupling and cycles | — |
+| ADR-06 | ~~Favorites in `core:domain` + `core:data`~~ **Superseded by ADR-17** | It was the only way for two features to use the same rule without depending on each other | — |
+| ADR-07 | **Paging 3** for list and search, with `paging-common` (JVM) in the domain | The TMDB API is paginated. Paging is Google's official solution for paged lists | Manual pagination in the ViewModel |
+| ADR-08 | **Navigation Compose with type-safe routes** (`@Serializable`). Only the `app` module knows every route | Google's current recommendation. Features expose `NavGraphBuilder` extensions | Navigation 3 (valid, see section 16) |
+| ADR-09 | **Pure Dagger 2** (no Hilt) for DI, with KSP | Explicit control of the graph: root `AppComponent` + `ViewModelComponent` (a subcomponent per ViewModel with `SavedStateHandle`). No aggregated code generation magic | Hilt (less code, but hides the graph); Koin |
+| ADR-10 | **Online** movies (no cache). **Offline** favorites in Room | v1 scope. The movie cache can come later with `RemoteMediator` without breaking contracts | Full offline-first from the start |
+| ADR-11 | TMDB token in `local.properties` → `BuildConfig` of `core:network` | Out of version control and simple for development | Hardcoded in the code |
+| ADR-12 | **`core:di` module** with `ViewModelKey`, `DaggerViewModelFactory` and `daggerViewModel()` | The equivalent of what Hilt provides out of the box. It lives in the core so every `presentation` module can use it without knowing `:app` | A factory per feature (duplication) |
+| ADR-14 | **Generic server-driven UI in the core**: model in `core:common`, parser in `core:network`, renderer in `core:ui`. Each feature only produces/consumes `List<SduiComponent>` | Any screen can have server-driven blocks without duplicating parser/renderer; unknown types are ignored (the backend can evolve ahead of the app) | SDUI inside the feature (not reusable) |
+| ADR-15 | **Shared list components in `core:ui/movie`** (`MovieCardUi`, `MovieCard`, `MovieGrid`, skeletons) | The main list and favorites share the same card. Per ADR-05, what two features use moves to the core | Each feature with its own card (duplication) |
+| ADR-16 | **Tracking through multibinding** (`@IntoSet`/`@ElementsIntoSet`): features only use `Analytics`/`ErrorReporter` (`core:analytics`, JVM); each destination (Firebase, Crashlytics, Logcat in debug) registers itself in a `Set` | Replace or add analytics tools without touching features; destinations per build type without `if (DEBUG)`; tests with `TestAnalytics` | Calling the Firebase SDK directly from features |
+| ADR-17 | **`api` module for features consumed by other features** (today only `favorites`): `:feature:favorites:api` (JVM) publishes `FavoriteMovie` and thin use case interfaces (`ObserveFavoriteIdsUseCase`, `ObserveIsFavoriteUseCase`, `ToggleFavoriteUseCase`). The feature keeps the three layer modules of ADR-03 (`domain` implements the `api` interfaces, `data` holds Room and `FavoritesDataModule`, `presentation` holds the screen). Other features depend only on `:api`; only `:app` knows the favorites' `domain`/`data`/`presentation` | Dependency Inversion and Interface Segregation between modules; the core goes back to holding only cross-cutting rules; compile avoidance; Stable Abstractions/Stable Dependencies. The `api` module solves visibility between features and the layers solve internal organization: they are orthogonal | Favorites in the core (ADR-06); a single `:impl` with the layers in packages (broke the ADR-03 pattern and traded the compiler's guarantee for Konsist's); an `api` module in every feature (empty modules) |
+| ADR-18 | **Repositories depend on data sources, never directly on a DAO or a Retrofit API**: `FavoritesLocalDataSource` (wraps `FavoriteMovieDao`), `MoviesRemoteDataSource` (`MoviesApi`), `MovieDetailRemoteDataSource` (`MovieDetailApi`); preferences already followed the pattern with `UserPreferencesDataSource`. Data sources live in `data/datasource`, are `internal`, talk to a single source and return data-layer models (entity, DTO); the repository maps to the domain and decides the policy (cache, timestamps, errors) | The shape recommended by the [data layer guide](https://developer.android.com/topic/architecture/data-layer) (`<Type>Local/RemoteDataSource` names); repositories focused on orchestration; an extension point for combining remote + local (offline cache); consistency across repositories | Injecting the DAO/API directly into the repository (the guide also accepts it when there is a single source and no extra logic; discarded for consistency and evolution) |
+| ADR-13 | **Dagger modules as a public + internal pair**: a public `@Module(includes = [XxxBindsModule::class]) object XxxModule`, bindings `internal` | With pure Dagger the `AppComponent` must reference the module; the pair keeps implementations, DTOs and interceptors `internal` (rule 5.2.2) | Making everything public |
 
 ---
 
 ## 3. Stack
 
-| Área | Tecnologia |
+| Area | Technology |
 |---|---|
-| Linguagem | Kotlin 2.4 (Kotlin embutido no AGP 9, sem plugin `kotlin-android`) |
-| Build | Gradle 9.6, AGP 9.4, version catalog, convention plugins em `build-logic`, type-safe project accessors |
+| Language | Kotlin 2.4 (built-in Kotlin in AGP 9, no `kotlin-android` plugin) |
+| Build | Gradle 9.6, AGP 9.4, version catalog, convention plugins in `build-logic`, type-safe project accessors |
 | UI | Jetpack Compose (BOM 2026.09.00), Material 3, single Activity |
-| Estado | ViewModel + `StateFlow`, UDF, `collectAsStateWithLifecycle` |
-| Navegação | Navigation Compose 2.10 (type-safe) |
-| DI | Dagger 2.60 puro com KSP (sem Hilt) |
-| Rede | Retrofit 3 + OkHttp 5 + kotlinx.serialization |
-| Paginação | Paging 3 |
-| Persistência | Room 2.8 (favoritos) |
-| Imagens | Coil 3 |
+| State | ViewModel + `StateFlow`, UDF, `collectAsStateWithLifecycle` |
+| Navigation | Navigation Compose 2.10 (type-safe) |
+| DI | Pure Dagger 2.60 with KSP (no Hilt) |
+| Network | Retrofit 3 + OkHttp 5 + kotlinx.serialization |
+| Pagination | Paging 3 |
+| Persistence | Room 2.8 (favorites), DataStore (preferences) |
+| Images | Coil 3 |
 | Async | Coroutines + Flow |
-| Testes | JUnit4, coroutines-test, Turbine, paging-testing, MockWebServer, Robolectric 4.17, Compose UI Test, Roborazzi, Konsist, AndroidX Test + Orchestrator, Kover, module-graph-assert, fakes |
+| Tests | JUnit4, coroutines-test, Turbine, paging-testing, MockWebServer, Robolectric 4.17, Compose UI Test, Roborazzi, Konsist, AndroidX Test + Orchestrator, Kover, module-graph-assert, fakes |
 | SDK | minSdk 26 · targetSdk 37 · compileSdk 37 |
 
-`minSdk 26` foi escolhido para usar `java.time` (LocalDate) sem desugaring.
+`minSdk 26` was chosen to use `java.time` (LocalDate) without desugaring.
 
 ---
 
-## 4. Estrutura do monorepo
+## 4. Monorepo structure
 
 ```
-film-search-android/
+my-favorite-film-android/
 ├── app/                                   # Shell: Application, MainActivity, NavHost, AppComponent/ViewModelComponent (Dagger)
 ├── build-logic/
 │   ├── settings.gradle.kts
 │   └── convention/
 │       ├── build.gradle.kts
-│       └── src/main/kotlin/               # Convention plugins (seção 12)
+│       └── src/main/kotlin/               # Convention plugins (section 12)
 ├── core/
-│   ├── common/          (JVM)             # AppResult, DomainError, DomainException
-│   ├── domain/          (JVM)             # Regras transversais: preferências (tema, idioma)
-│   ├── data/            (Android)         # Implementação dos repositórios compartilhados
+│   ├── common/          (JVM)             # AppResult, DomainError, DomainException, SDUI model
+│   ├── domain/          (JVM)             # Cross-cutting rules: preferences (theme, language)
+│   ├── data/            (Android)         # Implementation of the shared repositories
 │   ├── network/         (Android)         # Retrofit, OkHttp, interceptors, safeApiCall, TmdbImages
-│   ├── database/        (Android)         # Room: AppDatabase, entities, DAOs
+│   ├── database/        (Android)         # Room: MoviesDatabase, entities, DAOs
 │   ├── datastore/       (Android)         # DataStore Preferences: UserPreferencesDataSource
-│   ├── designsystem/    (Android+Compose) # Tema, cores, tipografia, componentes base, MoviePoster
-│   ├── ui/              (Android+Compose) # Componentes de estado (loading/erro/vazio), mensagens de erro
+│   ├── designsystem/    (Android+Compose) # Theme, colors, typography, base components, MoviePoster
+│   ├── ui/              (Android+Compose) # State components (loading/error/empty), error messages
 │   ├── di/              (Android+Compose) # ViewModelKey, DaggerViewModelFactory, daggerViewModel()
-│   ├── analytics/       (JVM)             # Analytics, ErrorReporter, eventos; composites com Set<Tracker>
-│   ├── analytics-firebase/ (Android)      # SDK do Firebase para Analytics + Crashlytics
-│   ├── ai/              (JVM)             # Contrato de IA: AiJsonGenerator, AiSchema, AiException
-│   ├── ai-firebase/     (Android)         # Gemini via Firebase AI Logic + App Check (debug/release)
-│   └── testing/         (JVM)             # MainDispatcherRule, fakes dos contratos de core
-├── feature/                               # README.md com o checklist de nova feature
+│   ├── analytics/       (JVM)             # Analytics, ErrorReporter, events; composites over Set<Tracker>
+│   ├── analytics-firebase/ (Android)      # Firebase SDK for Analytics + Crashlytics
+│   ├── ai/              (JVM)             # AI contract: AiJsonGenerator, AiSchema, AiException
+│   ├── ai-firebase/     (Android)         # Gemini through Firebase AI Logic + App Check (debug/release)
+│   └── testing/         (JVM)             # MainDispatcherRule, fakes of the core contracts
+├── feature/                               # README.md with the new feature checklist
 │   ├── favorites/
-│   │   ├── api/           (JVM)             # contrato público: FavoriteMovie + interfaces de use case (+ testFixtures: FakeFavorites)
-│   │   ├── domain/        (JVM)             # FavoritesRepository, *UseCaseImpl (implementam o api), ObserveFavoritesUseCase (+ testFixtures)
-│   │   ├── data/          (Android)         # FavoritesRepositoryImpl (Room) e FavoritesDataModule
-│   │   └── presentation/  (Android+Compose) # FavoritesViewModel, tela e navegação
+│   │   ├── api/           (JVM)             # public contract: FavoriteMovie + use case interfaces (+ testFixtures: FakeFavorites)
+│   │   ├── domain/        (JVM)             # FavoritesRepository, *UseCaseImpl (implement the api), ObserveFavoritesUseCase (+ testFixtures)
+│   │   ├── data/          (Android)         # FavoritesLocalDataSource, FavoritesRepositoryImpl (Room) and FavoritesDataModule
+│   │   └── presentation/  (Android+Compose) # FavoritesViewModel, screen and navigation
 │   ├── movies/
 │   │   ├── domain/        (JVM)
 │   │   ├── data/          (Android)
@@ -138,30 +138,31 @@ film-search-android/
 │   │   ├── data/          (Android)
 │   │   └── presentation/  (Android+Compose)
 │   └── settings/
-│       └── presentation/  (Android+Compose) # só UI: regras de preferências estão no core
-├── architecture-test/  (JVM)            # Konsist: regras de arquitetura sobre o código-fonte
-├── .agents/skills/                        # Skills de agente (padrão Agent Skills): feature-builder, data-integrator, compose-ui, ...
+│       └── presentation/  (Android+Compose) # UI only: preference rules live in the core
+├── architecture-test/  (JVM)            # Konsist: architecture rules over the source code
+├── .agents/skills/                        # Agent skills (Agent Skills standard): feature-builder, data-integrator, compose-ui, ...
 ├── .github/
-│   ├── workflows/ci.yml                   # CI: docs, grafo, Konsist, testes JVM, screenshots, lint, Kover, emulador
-│   ├── pull_request_template.md           # Definição de pronto
-│   └── ISSUE_TEMPLATE/feature-spec.md     # Especificação de feature para pessoas e agentes
-├── docs/                                  # Tutoriais, how-to, referência, explicação e ADRs (docs/README.md)
+│   ├── workflows/ci.yml                   # Android CI: docs, graph, Konsist, JVM tests, screenshots, lint, Kover, emulator
+│   ├── pull_request_template.md           # Definition of done
+│   └── ISSUE_TEMPLATE/feature-spec.md     # Feature specification for people and agents
+├── docs/                                  # Tutorials, how-to, reference, explanation and ADRs (docs/README.md)
 ├── scripts/                               # verify.sh, verify-module.sh, record-screenshots.sh, check-docs.py, git-hooks/
-├── AGENTS.md                              # Instruções para agentes (também em app/, core/, feature/, build-logic/, architecture-test/)
+├── README.md                              # Project overview
+├── AGENTS.md                              # Instructions for agents (also in app/, core/, feature/, build-logic/, architecture-test/)
 ├── gradle/
 │   ├── libs.versions.toml
 │   └── wrapper/gradle-wrapper.properties
 ├── build.gradle.kts
 ├── settings.gradle.kts
 ├── gradle.properties
-└── local.properties                       # NÃO versionado: TMDB_ACCESS_TOKEN
+└── local.properties                       # NOT committed: TMDB_ACCESS_TOKEN
 ```
 
-### 4.1 Pacotes por módulo
+### 4.1 Packages per module
 
-Pacote base: `com.faas.myfavoritefilms`.
+Base package: `com.faas.myfavoritefilms`.
 
-| Módulo | Tipo | Namespace / pacote |
+| Module | Type | Namespace / package |
 |---|---|---|
 | `:app` | Android app | `com.faas.myfavoritefilms` |
 | `:core:common` | JVM | `com.faas.myfavoritefilms.core.common` |
@@ -191,34 +192,35 @@ Pacote base: `com.faas.myfavoritefilms`.
 | `:feature:settings:presentation` | Android lib | `com.faas.myfavoritefilms.feature.settings.presentation` |
 | `:architecture-test` | JVM | `com.faas.myfavoritefilms.architecture` |
 
-### 4.2 Estrutura interna padrão de uma feature
+### 4.2 Standard internal structure of a feature
 
 ```
-feature/<nome>/
+feature/<name>/
 ├── domain/src/main/kotlin/.../domain/
-│   ├── model/            # Modelos de negócio (data classes imutáveis)
-│   ├── repository/       # Interfaces (contratos)
-│   └── usecase/          # Um use case por ação
+│   ├── model/            # Business models (immutable data classes)
+│   ├── repository/       # Interfaces (contracts)
+│   └── usecase/          # One use case per action
 ├── data/src/main/kotlin/.../data/
+│   ├── datasource/       # Local/remote data sources (internal, one source each)
 │   ├── remote/
-│   │   ├── api/          # Interface Retrofit
-│   │   └── dto/          # @Serializable DTOs (nunca saem do módulo)
-│   ├── paging/           # PagingSource (quando houver)
+│   │   ├── api/          # Retrofit interface
+│   │   └── dto/          # @Serializable DTOs (never leave the module)
+│   ├── paging/           # PagingSource (when there is one)
 │   ├── mapper/           # Dto -> Domain
-│   ├── repository/       # Implementações (internal)
-│   └── di/               # @Module Dagger: par público + internal (ADR-13)
+│   ├── repository/       # Implementations (internal)
+│   └── di/               # Dagger @Module: public + internal pair (ADR-13)
 └── presentation/src/main/kotlin/.../presentation/
-    ├── di/               # @Module com @Binds @IntoMap @ViewModelKey dos ViewModels
-    ├── navigation/       # Rota @Serializable + extensões NavGraphBuilder/NavController
-    ├── model/            # Modelos de UI + mappers Domain -> UI
-    ├── <Tela>UiState.kt
-    ├── <Tela>ViewModel.kt
-    └── <Tela>Screen.kt   # Screen (stateful) + Content (stateless) + Previews
+    ├── di/               # @Module with @Binds @IntoMap @ViewModelKey for the ViewModels
+    ├── navigation/       # @Serializable route + NavGraphBuilder/NavController extensions
+    ├── model/            # UI models + Domain -> UI mappers
+    ├── <Screen>UiState.kt
+    ├── <Screen>ViewModel.kt
+    └── <Screen>Screen.kt   # Screen (stateful) + Content (stateless) + Previews
 ```
 
 ---
 
-## 5. Grafo e regras de dependência
+## 5. Dependency graph and rules
 
 ```mermaid
 flowchart TD
@@ -277,122 +279,123 @@ flowchart TD
     aiFb --> ai
 ```
 
-Simplificado; outras visões (camadas, DI, fluxos de lista, IA e erros) em [docs/explanation/architecture.md](docs/explanation/architecture.md).
+Simplified; other views (layers, DI, list, AI and error flows) are in [docs/explanation/architecture.md](docs/explanation/architecture.md).
 
-### 5.1 Matriz de dependências permitidas
+### 5.1 Allowed dependency matrix
 
-| Módulo | Pode depender de | Proibido |
+| Module | May depend on | Forbidden |
 |---|---|---|
-| `feature:x:domain` | `core:common`, `core:domain`, `paging-common`, `coroutines-core`, `javax.inject` | Android SDK, Retrofit, Room, Compose, qualquer `data`/`presentation`, outra feature |
-| `feature:x:data` | `feature:x:domain`, `core:network`, `core:common` | `presentation`, outra feature, `core:database`* |
-| `feature:x:presentation` | `feature:x:domain`, `core:domain`, `core:ui`, `core:designsystem`, `core:common`, `core:di` | `data` de qualquer módulo, `core:network`, `core:database`, `core:datastore`, outra feature |
-| `feature:x:api` | `core:common`, `coroutines-core` | Android, Dagger, qualquer `core` de infraestrutura, os próprios `domain`/`data`/`presentation` |
-| consumidor de outra feature | `feature:y:api` | `feature:y:domain`, `feature:y:data`, `feature:y:presentation` |
-| `core:domain` | `core:common` | qualquer `feature`, Android |
-| `core:data` | `core:domain`, `core:database`, `core:datastore`, `core:common` | qualquer `feature` |
-| `core:network` / `core:database` / `core:datastore` | `core:common` | qualquer `feature`, `core:domain`, `core:data` |
-| `core:ui` | `core:designsystem`, `core:common` | qualquer `feature`, `domain`, `data` |
-| `core:di` | Dagger, lifecycle-viewmodel | qualquer outro módulo do projeto |
-| `core:analytics` | `core:common` | Android, Firebase, qualquer `feature` |
-| `core:analytics-firebase` | `core:analytics`, SDK do Firebase | qualquer `feature` |
-| `core:ai` | nada (JVM puro) | Android, Firebase, qualquer `feature` |
-| `core:ai-firebase` | `core:ai`, SDK do Firebase (AI Logic, App Check) | qualquer `feature` |
-| `feature:x:data` | + `core:ai` (só o contrato) | `core:ai-firebase` (grafo e Konsist garantem) |
-| `feature:x:data` / `feature:x:presentation` | + `core:analytics` (só as interfaces) | SDK do Firebase (Konsist garante) |
-| `:app` | todos os `presentation` e `data`, `core:data`, `core:network`, `core:database`, `core:datastore`, `core:ai-firebase`, `core:di`, `core:designsystem`, `core:ui` | — |
+| `feature:x:domain` | `core:common`, `core:domain`, `paging-common`, `coroutines-core`, `javax.inject` | Android SDK, Retrofit, Room, Compose, any `data`/`presentation`, another feature |
+| `feature:x:data` | `feature:x:domain`, `core:network`, `core:common` | `presentation`, another feature, `core:database`* |
+| `feature:x:presentation` | `feature:x:domain`, `core:domain`, `core:ui`, `core:designsystem`, `core:common`, `core:di` | `data` of any module, `core:network`, `core:database`, `core:datastore`, another feature |
+| `feature:x:api` | `core:common`, `coroutines-core` | Android, Dagger, any infrastructure `core` module, its own `domain`/`data`/`presentation` |
+| consumer of another feature | `feature:y:api` | `feature:y:domain`, `feature:y:data`, `feature:y:presentation` |
+| `core:domain` | `core:common` | any `feature`, Android |
+| `core:data` | `core:domain`, `core:datastore`, `core:common` | any `feature` |
+| `core:network` / `core:database` / `core:datastore` | `core:common` | any `feature`, `core:domain`, `core:data` |
+| `core:ui` | `core:designsystem`, `core:common`, `core:analytics` | any `feature`, `domain`, `data` |
+| `core:di` | Dagger, lifecycle-viewmodel | any other project module |
+| `core:analytics` | `core:common` | Android, Firebase, any `feature` |
+| `core:analytics-firebase` | `core:analytics`, Firebase SDK | any `feature` |
+| `core:ai` | nothing (pure JVM) | Android, Firebase, any `feature` |
+| `core:ai-firebase` | `core:ai`, Firebase SDK (AI Logic, App Check) | any `feature` |
+| `feature:x:data` | + `core:ai` (the contract only) | `core:ai-firebase` (graph and Konsist enforce it) |
+| `feature:x:data` / `feature:x:presentation` | + `core:analytics` (the interfaces only) | Firebase SDK (Konsist enforces it) |
+| `:app` | every `presentation` and `data`, `core:data`, `core:network`, `core:database`, `core:datastore`, `core:ai-firebase`, `core:analytics-firebase`, `core:di`, `core:designsystem`, `core:ui` | — |
 
-\* Se uma feature precisar de cache próprio, crie a entity e o DAO em `core:database`. A dependência então é permitida e deve ser registrada aqui.
+\* If a feature needs its own storage, create the entity and the DAO in `core:database`. The dependency is then allowed (as in `feature:favorites:data`) and must be recorded here.
 
-### 5.2 Regras de ouro
+### 5.2 Golden rules
 
-1. **DTOs, entities e `Retrofit`/`Room` nunca atravessam a fronteira do módulo `data`.** O que sai é modelo de domínio.
-2. **Implementações são `internal`.** Num módulo `data`, o único tipo público é o `@Module` agregador (ADR-13), que só faz `includes` do módulo interno.
-3. **O `:app` depende dos módulos `data` apenas para o `AppComponent` instalar os módulos Dagger deles.** O `app` não chama nada deles diretamente.
-4. **Duas features precisando da mesma coisa → sobe para `core`.** Nunca `implementation(projects.feature.outra...)`.
-5. **Uso de `api(...)` só quando o tipo aparece na API pública do módulo.** Exemplo: o domain expõe `AppResult`, então usa `api(projects.core.common)`.
-6. **Repositório nunca recebe DAO nem API Retrofit no construtor** (ADR-18). Ele depende de um `<Tipo>LocalDataSource` ou `<Tipo>RemoteDataSource` do pacote `data/datasource`. O Konsist garante.
+1. **DTOs, entities and `Retrofit`/`Room` never cross the `data` module boundary.** What leaves it is a domain model.
+2. **Implementations are `internal`.** In a `data` module, the only public type is the aggregating `@Module` (ADR-13), which only `includes` the internal module.
+3. **`:app` depends on the `data` modules only so `AppComponent` can install their Dagger modules.** The `app` never calls them directly.
+4. **Two features needing the same thing → it moves to `core`.** Never `implementation(projects.feature.other...)`.
+5. **Use `api(...)` only when the type appears in the module's public API.** Example: the domain exposes `AppResult`, so it uses `api(projects.core.common)`.
+6. **A repository never receives a DAO or a Retrofit API in its constructor** (ADR-18). It depends on a `<Type>LocalDataSource` or `<Type>RemoteDataSource` from the `data/datasource` package. Konsist enforces it.
 
 ---
 
-## 6. Integração com a TMDB
+## 6. TMDB integration
 
-### 6.1 Autenticação
+### 6.1 Authentication
 
-Use o **API Read Access Token** (Bearer), e não a API key na query string. A TMDB aceita os dois com o mesmo nível de acesso, mas o header mantém o token fora das URLs e dos logs.
+Use the **API Read Access Token** (Bearer), not the API key in the query string. TMDB accepts both with the same access level, but the header keeps the token out of URLs and logs.
 
 ```
 Authorization: Bearer <API_READ_ACCESS_TOKEN>
 ```
 
-**Guardando o token.** Só o *API Read Access Token* é usado. A *API Key* (v3) não entra no projeto: uma credencial a menos para vazar.
+**Storing the token.** Only the *API Read Access Token* is used. The *API Key* (v3) doesn't enter the project: one less credential to leak.
 
-| Ambiente | Onde fica | Como chega ao build |
+| Environment | Where it lives | How it reaches the build |
 |---|---|---|
-| Máquina do dev | `local.properties` (no `.gitignore`, compartilhado entre devs por canal seguro, nunca pelo repo) | `TMDB_ACCESS_TOKEN=...` |
-| CI (GitHub Actions) | *Repository secret* `TMDB_ACCESS_TOKEN` | `env: TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}` no workflow |
+| Developer machine | `local.properties` (in `.gitignore`, shared between developers through a secure channel, never through the repo) | `TMDB_ACCESS_TOKEN=...` |
+| CI (GitHub Actions) | `TMDB_ACCESS_TOKEN` *repository secret* | `env: TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}` in the workflow |
 
-O `core/network/build.gradle.kts` lê primeiro o `local.properties` e, se não achar, a variável de ambiente, ambos via `providers` (compatível com o configuration cache). O valor vira `BuildConfig.TMDB_ACCESS_TOKEN`, usado só pelo `TmdbAuthInterceptor`. Se estiver vazio, o build avisa e as chamadas retornam 401 (`DomainError.Unauthorized`).
+`core/network/build.gradle.kts` reads `local.properties` first and, if it doesn't find the token, the environment variable, both through `providers` (configuration cache compatible). The value becomes `BuildConfig.TMDB_ACCESS_TOKEN`, used only by `TmdbAuthInterceptor`. If it is empty, the build warns and calls return 401 (`DomainError.Unauthorized`).
 
-Camadas de proteção que já existem:
-- o token nunca está no Git (nem em `gradle.properties`, que é versionado);
-- vai no header `Authorization`, não na URL, e o log de debug faz `redactHeader("Authorization")`;
-- o logging HTTP só existe em `debug`; o `release` usa R8.
+Protection layers already in place:
+- the token is never in Git (not even in `gradle.properties`, which is committed);
+- it goes in the `Authorization` header, not in the URL, and debug logging uses `redactHeader("Authorization")`;
+- HTTP logging only exists in `debug`; `release` uses R8;
+- the `pre-commit` hook in `scripts/git-hooks/` blocks `local.properties` and token patterns.
 
-**Opções avaliadas**
+**Options evaluated**
 
-| Opção | Segurança real | Quando usar |
+| Option | Real security | When to use |
 |---|---|---|
-| `local.properties` + `BuildConfig` (**adotado**) | Fora do Git, mas **extraível do APK** | Dev, portfólio, APIs gratuitas e só leitura (caso da TMDB) |
-| Secrets Gradle Plugin (Google) | Igual ao anterior; só automatiza a leitura | Equivalente; não adotado para evitar mais um plugin |
-| Ofuscação (NDK/C++, XOR, strings cifradas) | Atrasa engenharia reversa, não impede | Não vale a complexidade aqui |
-| **Backend/proxy próprio** (ex.: Cloud Function) guardando o token + Play Integrity/App Check | **Único que tira o segredo do app** | Produção com chave paga ou sensível |
+| `local.properties` + `BuildConfig` (**adopted**) | Out of Git, but **extractable from the APK** | Development, portfolio, free read-only APIs (TMDB's case) |
+| Secrets Gradle Plugin (Google) | Same as above; it only automates reading | Equivalent; not adopted to avoid another plugin |
+| Obfuscation (NDK/C++, XOR, encrypted strings) | Slows reverse engineering, doesn't prevent it | Not worth the complexity here |
+| **Own backend/proxy** (e.g. Cloud Function) holding the token + Play Integrity/App Check | **The only one that removes the secret from the app** | Production with a paid or sensitive key |
 
-> ⚠️ Qualquer segredo embutido no APK pode ser extraído. Para a TMDB (token gratuito e só de leitura) o risco é aceitável. Se o token vazar, gere outro em *Settings → API* na TMDB e atualize o `local.properties` e o secret do GitHub.
+> ⚠️ Any secret embedded in the APK can be extracted. For TMDB (free, read-only token) the risk is acceptable. If the token leaks, generate a new one under *Settings → API* on TMDB and update `local.properties` and the GitHub secret.
 
-### 6.2 Endpoints usados
+### 6.2 Endpoints used
 
 Base URL: `https://api.themoviedb.org/3/`
 
-| Uso | Método | Endpoint | Parâmetros |
+| Use | Method | Endpoint | Parameters |
 |---|---|---|---|
-| Populares | GET | `movie/popular` | `page` |
-| Busca por título | GET | `search/movie` | `query`, `page`, `include_adult=false` |
-| Busca com IA | GET | `discover/movie` | `page`, `sort_by`, `with_genres` (separados por vírgula = todos), `primary_release_date.gte/lte`, `vote_average.gte`, `vote_count.gte`, `include_adult=false` |
-| Gêneros | GET | `genre/movie/list` | — (no idioma do aparelho; cache em memória por idioma) |
-| Detalhe | GET | `movie/{movie_id}` | `append_to_response=credits,videos` (elenco e vídeos na mesma chamada) |
+| Popular | GET | `movie/popular` | `page` |
+| Title search | GET | `search/movie` | `query`, `page`, `include_adult=false` |
+| AI search | GET | `discover/movie` | `page`, `sort_by`, `with_genres` (comma-separated = all of them), `primary_release_date.gte/lte`, `vote_average.gte`, `vote_count.gte`, `include_adult=false` |
+| Genres | GET | `genre/movie/list` | — (in the device language; in-memory cache per language) |
+| Detail | GET | `movie/{movie_id}` | `append_to_response=credits,videos` (cast and videos in the same call) |
 
-O parâmetro `language` (ex.: `pt-BR`) é adicionado automaticamente por um interceptor, a partir do locale do aparelho, para os títulos e sinopses virem traduzidos quando houver tradução.
+The `language` parameter (e.g. `pt-BR`) is added automatically by an interceptor, from the device locale, so titles and synopses come translated when a translation exists.
 
-Respostas paginadas têm o formato `{ page, results[], total_pages, total_results }` e 20 itens por página. A TMDB limita a navegação a 500 páginas, e o `PagingSource` respeita esse teto.
+Paged responses have the shape `{ page, results[], total_pages, total_results }` with 20 items per page. TMDB limits navigation to 500 pages, and the `PagingSource` respects that ceiling.
 
-### 6.3 Imagens
+### 6.3 Images
 
-A API devolve só o caminho (`poster_path: "/abc.jpg"`). A URL final é montada no **mapper do data**, para o domain já receber a URL pronta:
+The API returns only the path (`poster_path: "/abc.jpg"`). The final URL is built in the **data mapper**, so the domain already receives the complete URL:
 
 ```
-https://image.tmdb.org/t/p/{tamanho}{caminho}
+https://image.tmdb.org/t/p/{size}{path}
 ```
 
-| Uso | Tamanho |
+| Use | Size |
 |---|---|
-| Pôster na grade | `w342` |
-| Pôster no detalhe | `w500` |
-| Backdrop no detalhe | `w780` |
+| Poster in the grid | `w342` |
+| Poster on the detail | `w500` |
+| Backdrop on the detail | `w780` |
 
-Os tamanhos ficam centralizados em `TmdbImages` (`core:network`). O endpoint `configuration` da TMDB devolve a lista oficial de tamanhos, caso você queira torná-la dinâmica no futuro.
+Sizes are centralized in `TmdbImages` (`core:network`). TMDB's `configuration` endpoint returns the official list of sizes, should you want to make it dynamic in the future.
 
-### 6.4 Boas práticas da API
+### 6.4 API good practices
 
-- **Rate limit:** a TMDB aplica limite de requisições. O debounce da busca (seção 8.3) evita disparar uma chamada por tecla. HTTP 429 é mapeado para `DomainError.RateLimited`.
-- **Atribuição:** os termos de uso da TMDB pedem crédito visível no app (logo e aviso de que o app usa a API sem endosso da TMDB). Reserve uma tela "Sobre" ou um rodapé para isso e confira os termos antes de publicar.
+- **Rate limit:** TMDB applies a request limit. The search debounce (section 8.3) avoids firing one call per keystroke. HTTP 429 is mapped to `DomainError.RateLimited`.
+- **Attribution:** TMDB's terms of use require visible credit in the app (logo and a notice that the app uses the API without TMDB's endorsement). Reserve an "About" screen or a footer for it and check the terms before publishing.
 
 ---
 
-## 7. Módulos core
+## 7. Core modules
 
 ### 7.1 `core:common` (JVM)
 
-Tipos usados por todas as camadas. Sem nenhuma dependência de Android.
+Types used by every layer. No Android dependency at all.
 
 ```kotlin
 // AppResult.kt
@@ -418,40 +421,34 @@ inline fun <T, R> AppResult<T>.fold(
 ```kotlin
 // DomainError.kt
 sealed interface DomainError {
-    data object Network : DomainError            // sem internet / timeout
-    data object Unauthorized : DomainError       // 401: token inválido
+    data object Network : DomainError            // no internet / timeout
+    data object Unauthorized : DomainError       // 401: invalid token
     data object NotFound : DomainError           // 404
     data object RateLimited : DomainError        // 429
     data class Server(val code: Int) : DomainError
     data object Unknown : DomainError
 }
 
-/** Transporta um DomainError por APIs que só aceitam Throwable (ex.: Paging LoadResult.Error). */
 class DomainException(val error: DomainError) : Exception(error.toString())
 ```
 
-### 7.2 `core:domain` (JVM): regras transversais
+`DomainException` carries a `DomainError` through APIs that only accept a `Throwable` (e.g. Paging's `LoadResult.Error`).
 
-Hoje só as preferências do usuário (seção 7.12). Regra usada por mais de uma feature **não** vem automaticamente para cá: se ela tem dono (como favoritos), vira uma feature com módulo `api` (ADR-17, seção 7.14).
+### 7.2 `core:domain` (JVM): cross-cutting rules
+
+Today only the user preferences (section 7.12). A rule used by more than one feature does **not** automatically come here: if it has an owner (like favorites), it becomes a feature with an `api` module (ADR-17, section 7.14).
 
 ### 7.3 `core:network`
 
-Uma única instância de `Retrofit` e `OkHttpClient` para o app inteiro. Cada feature só cria sua interface de API a partir dela.
+A single `Retrofit` and `OkHttpClient` instance for the whole app. Each feature only creates its API interface from it.
 
-**`core/network/build.gradle.kts`**
+**`core/network/build.gradle.kts`** (simplified)
 
 ```kotlin
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.movies.android.library)
     alias(libs.plugins.movies.dagger)
     alias(libs.plugins.kotlin.serialization)
-}
-
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use(::load)
 }
 
 android {
@@ -459,17 +456,12 @@ android {
     buildFeatures { buildConfig = true }
     defaultConfig {
         buildConfigField("String", "TMDB_BASE_URL", "\"https://api.themoviedb.org/3/\"")
-        buildConfigField(
-            "String",
-            "TMDB_ACCESS_TOKEN",
-            "\"${localProperties.getProperty("TMDB_ACCESS_TOKEN", "")}\"",
-        )
+        buildConfigField("String", "TMDB_ACCESS_TOKEN", "\"$tmdbToken\"")
     }
 }
 
 dependencies {
     api(projects.core.common)
-    // api: tipos que aparecem na API pública e que o componente Dagger do :app precisa enxergar.
     api(libs.retrofit.core)
     api(libs.okhttp.core)
     api(libs.kotlinx.serialization.json)
@@ -477,6 +469,8 @@ dependencies {
     implementation(libs.okhttp.logging)
 }
 ```
+
+`tmdbToken` comes from `local.properties` or the `TMDB_ACCESS_TOKEN` environment variable (section 6.1). Retrofit, OkHttp and the JSON library are `api` because they appear in the public API and `:app`'s Dagger component must see them (section 12.8).
 
 **Interceptors**
 
@@ -494,18 +488,18 @@ internal class TmdbAuthInterceptor @Inject constructor() : Interceptor {
 internal class TmdbLanguageInterceptor @Inject constructor() : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val url = chain.request().url.newBuilder()
-            .addQueryParameter("language", Locale.getDefault().toLanguageTag()) // ex.: pt-BR
+            .addQueryParameter("language", Locale.getDefault().toLanguageTag())
             .build()
         return chain.proceed(chain.request().newBuilder().url(url).build())
     }
 }
 ```
 
-**Módulo Dagger** (par público + internal, ADR-13)
+**Dagger module** (public + internal pair, ADR-13)
 
 ```kotlin
 @Module(includes = [NetworkProvidersModule::class])
-object NetworkModule            // público: é o que o AppComponent instala
+object NetworkModule
 
 @Module
 internal object NetworkProvidersModule {
@@ -547,16 +541,23 @@ internal object NetworkProvidersModule {
 }
 ```
 
-**Conversão de exceções → `DomainError`** (único lugar do app que conhece `HttpException`):
+`NetworkModule` is public because it is what `AppComponent` installs; the providers stay internal.
+
+**Exception → `DomainError` conversion** (the only place in the app that knows `HttpException`):
 
 ```kotlin
-suspend inline fun <T> safeApiCall(crossinline block: suspend () -> T): AppResult<T> =
+suspend inline fun <T> safeApiCall(
+    crossinline onFailure: (cause: Throwable, error: DomainError) -> Unit = { _, _ -> },
+    crossinline block: suspend () -> T,
+): AppResult<T> =
     try {
         AppResult.Success(block())
     } catch (e: CancellationException) {
-        throw e                                  // nunca engolir cancelamento
+        throw e
     } catch (e: Exception) {
-        AppResult.Failure(e.toDomainError())
+        val error = e.toDomainError()
+        onFailure(e, error)
+        AppResult.Failure(error)
     }
 
 fun Throwable.toDomainError(): DomainError = when (this) {
@@ -573,7 +574,9 @@ fun Throwable.toDomainError(): DomainError = when (this) {
 }
 ```
 
-**Imagens**
+Cancellation is never swallowed. `onFailure` lets the repository report unexpected errors while the original exception (with its stack trace) still exists (section 7.11).
+
+**Images**
 
 ```kotlin
 object TmdbImages {
@@ -624,7 +627,6 @@ abstract class MoviesDatabase : RoomDatabase() {
     abstract fun favoriteMovieDao(): FavoriteMovieDao
 }
 
-/** O Context é o da Application, entregue pelo AppComponent (@BindsInstance + @Binds). */
 @Module
 object DatabaseModule {
     @Provides @Singleton
@@ -636,65 +638,41 @@ object DatabaseModule {
 }
 ```
 
-O schema é exportado para `core/database/schemas/` (configurado no convention plugin de Room) e **deve ser versionado**, porque é a base das migrações. `room-runtime` é `api` para o `AppComponent` enxergar `RoomDatabase`.
+The `Context` is the Application's, provided by `AppComponent` (`@BindsInstance` + `@Binds`). The schema is exported to `core/database/schemas/` (configured in the Room convention plugin) and **must be committed**, because it is the basis for migrations. `room-runtime` is `api` so `AppComponent` can see `RoomDatabase`. The entity and the DAO live here because the central `@Database` must list every entity; features access them only through a `LocalDataSource` (ADR-18).
 
 ### 7.5 `core:data`
 
-```kotlin
-internal class FavoritesRepositoryImpl @Inject constructor(
-    private val dao: FavoriteMovieDao,
-) : FavoritesRepository {
+Implements the `core:domain` repositories. Today: `UserPreferencesRepositoryImpl`, which depends on `UserPreferencesDataSource` (`core:datastore`) and maps the stored values to the domain (an unknown value falls back to the default). It is bound as `@Singleton` in `DataModule`, with the usual public + internal pair.
 
-    override fun observeFavoriteIds(): Flow<Set<Int>> = dao.observeIds().map { it.toSet() }
-    override fun observeIsFavorite(movieId: Int): Flow<Boolean> = dao.observeExists(movieId)
-    override fun observeFavorites(): Flow<List<FavoriteMovie>> =
-        dao.observeAll().map { list -> list.map { it.toDomain() } }
-
-    override suspend fun isFavorite(movieId: Int): Boolean = dao.exists(movieId)
-    override suspend fun add(movie: FavoriteMovie) = dao.upsert(movie.toEntity(System.currentTimeMillis()))
-    override suspend fun remove(movieId: Int) = dao.deleteById(movieId)
-}
-
-@Module(includes = [DataBindsModule::class])
-object DataModule
-
-@Module
-internal interface DataBindsModule {
-    @Binds @Singleton
-    fun bindFavoritesRepository(impl: FavoritesRepositoryImpl): FavoritesRepository
-}
-```
-
-Chamadas `suspend` do Room e do Retrofit já são *main-safe*. Não é preciso `withContext(Dispatchers.IO)` nelas. Use um dispatcher injetado apenas para trabalho bloqueante de verdade.
+`suspend` calls from Room, DataStore and Retrofit are already *main-safe*. There is no need for `withContext(Dispatchers.IO)` around them. Use an injected dispatcher only for truly blocking work.
 
 ### 7.6 `core:designsystem`
 
-- `MoviesTheme` (Material 3, claro/escuro, *dynamic color* a partir do Android 12).
-- Componentes visuais **sem conhecimento de domínio**, só com parâmetros primitivos:
+- `MoviesTheme` (Material 3, light/dark, *dynamic color* from Android 12).
+- Visual components **with no domain knowledge**, only primitive parameters:
 
-| Componente | O que faz |
+| Component | What it does |
 |---|---|
-| `SkeletonBox` | Bloco com shimmer. O progresso é lido só no `drawBehind`: anima sem recompor nem refazer layout |
-| `MoviePoster(url, contentDescription, aspectRatio, shape)` | Imagem com skeleton enquanto carrega, crossfade de 300 ms ao chegar e fallback com a inicial do título. Serve para pôster (2:3) e backdrop (`BACKDROP_ASPECT_RATIO`, 16:9) |
-| `SearchField` | Campo de busca: a lupa vira spinner durante o carregamento; botão de limpar animado |
-| `FavoriteIconButton` | Coração com animação de mola ao favoritar |
-| `RatingBadge`, `LabelChips` | Nota com estrela; etiquetas que quebram linha (gêneros, produtoras) |
+| `SkeletonBox` | Shimmering block. The progress is only read in `drawBehind`: it animates without recomposition or relayout |
+| `MoviePoster(url, contentDescription, aspectRatio, shape)` | Image with a skeleton while loading, a 300 ms crossfade on arrival and a fallback with the title's initial. Works for posters (2:3) and backdrops (`BACKDROP_ASPECT_RATIO`, 16:9) |
+| `SearchField` | Search field: the magnifier turns into a spinner while loading; animated clear button |
+| `FavoriteIconButton` | Heart with a spring animation when favoriting |
+| `RatingBadge`, `LabelChips` | Rating with a star; wrapping labels (genres, companies) |
 
-**Estratégia de carregamento de imagens (decisão v1.3):** skeleton com shimmer no tamanho final + crossfade + fallback.
-- Usa `AsyncImage` com `onLoading/onSuccess/onError`, e não `SubcomposeAsyncImage` (o Coil desaconselha subcomposição em listas).
-- O skeleton ocupa o espaço final (proporção fixa): nada "pula" quando a imagem chega.
-- O carregamento inicial das grades usa `MovieGridSkeleton` (cards em skeleton) em vez de spinner.
-- Alternativas avaliadas: BlurHash/ThumbHash (exige um hash vindo do backend; a TMDB não fornece), cor dominante (precisa da imagem antes), carregamento progressivo w92→w342 (dobra requisições), biblioteca Landscapist (dependência extra para algo que ~60 linhas resolvem).
+**Image loading strategy (v1.3 decision):** shimmering skeleton at the final size + crossfade + fallback.
+- Uses `AsyncImage` with `onLoading/onSuccess/onError`, not `SubcomposeAsyncImage` (Coil discourages subcomposition in lists).
+- The skeleton takes the final space (fixed aspect ratio): nothing "jumps" when the image arrives.
+- The grids' initial load uses `MovieGridSkeleton` (skeleton cards) instead of a spinner.
+- Alternatives evaluated: BlurHash/ThumbHash (needs a hash from the backend; TMDB doesn't provide one), dominant color (needs the image first), progressive loading w92→w342 (doubles requests), the Landscapist library (an extra dependency for something ~60 lines solve).
 
 ### 7.7 `core:ui`
 
-Componentes reutilizados por todas as telas:
+Components reused by every screen:
 
-- **Estado:** `LoadingContent`, `ErrorContent`, `EmptyContent` e o mapeamento de erro → mensagem (abaixo).
-- **Filmes (`movie/`, ADR-15):** `MovieCardUi` (modelo de UI do card, com `formatRating`), `MovieCard`, `MovieCardSkeleton`, `MovieGrid` (colunas/espaçamentos padrão via `MovieGridDefaults`) e `MovieGridSkeleton`. Usados pela lista principal e pelos favoritos.
-- **SDUI (`sdui/`):** `LazyListScope.sduiItems(components)` e `SduiComponentView` (seção 7.10).
-
-
+- **State:** `LoadingContent`, `ErrorContent`, `EmptyContent` and the error → message mapping (below).
+- **Movies (`movie/`, ADR-15):** `MovieCardUi` (the card's UI model, with `formatRating`), `MovieCard`, `MovieCardSkeleton`, `MovieGrid` (default columns/spacing through `MovieGridDefaults`) and `MovieGridSkeleton`. Used by the main list and by favorites.
+- **SDUI (`sdui/`):** `LazyListScope.sduiItems(components)` and `SduiComponentView` (section 7.10).
+- **Analytics:** `LocalAnalytics` and `TrackScreenView(screenName)` (section 7.11).
 
 ```kotlin
 @Composable fun LoadingContent(modifier: Modifier = Modifier)
@@ -711,92 +689,91 @@ fun DomainError.messageRes(): Int = when (this) {
     DomainError.Unknown -> R.string.error_unknown
 }
 
-/** Converte o Throwable do Paging (LoadState.Error) de volta para DomainError. */
 fun Throwable.asDomainError(): DomainError = (this as? DomainException)?.error ?: DomainError.Unknown
 ```
 
+`asDomainError()` converts Paging's `Throwable` (`LoadState.Error`) back into a `DomainError`.
+
 ### 7.8 `core:testing` (JVM)
 
-- `MainDispatcherRule` (troca `Dispatchers.Main` por `UnconfinedTestDispatcher`).
-- `FakeFavoritesRepository` (implementação em memória com `MutableStateFlow`).
-- Apenas fakes de **contratos do core**. Fakes de contratos de uma feature ficam no `src/test` dessa feature, porque o core não pode conhecer features.
+- `MainDispatcherRule` (replaces `Dispatchers.Main` with `UnconfinedTestDispatcher`).
+- `TestAnalytics` (records tracked events and reported errors), `FakeUserPreferencesRepository` and `FakeAppLanguageApplier`.
+- Only fakes of **core contracts**. Fakes of a feature's contracts live in that feature (`src/test` or `testFixtures`, like `FakeFavorites` in `:feature:favorites:api`), because the core can't know features.
 
-### 7.9 `core:di` (Android + Compose): Dagger para ViewModels
+### 7.9 `core:di` (Android + Compose): Dagger for ViewModels
 
-Substitui o que o Hilt faria (`@HiltViewModel` + `hiltViewModel()`):
+Replaces what Hilt would do (`@HiltViewModel` + `hiltViewModel()`):
 
-| Peça | Papel |
+| Piece | Role |
 |---|---|
-| `@ViewModelKey(X::class)` | `@MapKey` do multibinding `Map<Class<out ViewModel>, Provider<ViewModel>>` |
-| `ViewModelGraph` | Contrato implementado pelo `ViewModelComponent` do `:app`: expõe o mapa de providers |
-| `ViewModelGraphFactory` | Cria um `ViewModelGraph` novo recebendo o `SavedStateHandle` da tela |
-| `ViewModelMultibindsModule` | `@Multibinds` do mapa (mapa vazio é válido enquanto nenhuma feature contribuiu) |
-| `DaggerViewModelFactory` | A única `ViewModelProvider.Factory` do app. Cria o `SavedStateHandle` a partir dos `CreationExtras`, abre o subcomponente e instancia o ViewModel |
-| `LocalViewModelFactory` + `daggerViewModel()` | A `MainActivity` fornece a factory; as telas chamam `viewModel: XViewModel = daggerViewModel()` |
+| `@ViewModelKey(X::class)` | `@MapKey` for the `Map<Class<out ViewModel>, Provider<ViewModel>>` multibinding |
+| `ViewModelGraph` | Contract implemented by `:app`'s `ViewModelComponent`: exposes the providers map |
+| `ViewModelGraphFactory` | Creates a new `ViewModelGraph` receiving the screen's `SavedStateHandle` |
+| `ViewModelMultibindsModule` | `@Multibinds` for the map (an empty map is valid while no feature has contributed) |
+| `DaggerViewModelFactory` | The app's only `ViewModelProvider.Factory`. Creates the `SavedStateHandle` from the `CreationExtras`, opens the subcomponent and instantiates the ViewModel |
+| `LocalViewModelFactory` + `daggerViewModel()` | `MainActivity` provides the factory; screens call `viewModel: XViewModel = daggerViewModel()` |
 
 ```kotlin
-// Em cada feature:*:presentation/di/
 @Module
 interface MoviesPresentationModule {
     @Binds @IntoMap @ViewModelKey(MoviesViewModel::class)
     fun bindMoviesViewModel(vm: MoviesViewModel): ViewModel
 }
 
-// ViewModel: construtor @Inject comum. SavedStateHandle está disponível no grafo.
 class MovieDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getMovieDetail: GetMovieDetailUseCase,
 ) : ViewModel()
 ```
 
-Escopo: o ViewModel vive no `ViewModelStoreOwner` atual (dentro do `NavHost`, o `NavBackStackEntry` da tela), igual ao Hilt.
+Each `feature:*:presentation/di/` has a module like `MoviesPresentationModule`. ViewModels use a regular `@Inject` constructor, and `SavedStateHandle` is available in the graph. Scope: the ViewModel lives in the current `ViewModelStoreOwner` (inside the `NavHost`, the screen's `NavBackStackEntry`), just like with Hilt.
 
 ---
 
 ### 7.10 Server-Driven UI (SDUI)
 
-Parte de uma tela cujo conteúdo e ordem são decididos pelo "servidor". O app conhece um vocabulário fixo de blocos e só sabe desenhá-los.
+Part of a screen whose content and order are decided by the "server". The app knows a fixed vocabulary of blocks and only knows how to draw them.
 
 ```
 [backend]  JSON { schemaVersion, components: [ {type, ...}, ... ] }
      │
-core:network ─ SduiParser.parse(json)  →  List<SduiComponent>   (tipo desconhecido/malformado: descartado)
+core:network ─ SduiParser.parse(json)  →  List<SduiComponent>   (unknown/malformed type: dropped)
      │
-domain ─ MovieDetail.infoSections: List<SduiComponent>         (o domain só carrega, não interpreta)
+domain ─ MovieDetail.infoSections: List<SduiComponent>         (the domain only carries it, never interprets it)
      │
-core:ui ─ LazyListScope.sduiItems(...) / SduiComponentView      (tipo → composable)
+core:ui ─ LazyListScope.sduiItems(...) / SduiComponentView      (type → composable)
 ```
 
-| `type` | Modelo (`core:common/sdui`) | Campos |
+| `type` | Model (`core:common/sdui`) | Fields |
 |---|---|---|
 | `section_title` | `SectionTitle` | `text` |
 | `key_value_list` | `KeyValueList` | `title?`, `items[{label, value, icon?}]` |
 | `chip_group` | `ChipGroup` | `title?`, `chips[]` |
 | `text` | `TextBlock` | `title?`, `text` |
-| `link` | `LinkButton` | `label`, `url` (abre no navegador) |
+| `link` | `LinkButton` | `label`, `url` (opens in the browser) |
 | `divider` | `Divider` | — |
-| `person_carousel` | `PersonCarousel` | `title?`, `people[{name, subtitle?, imageUrl?}]` (foto circular) |
-| `video_carousel` | `VideoCarousel` | `title?`, `videos[{title, url, thumbnailUrl?}]` (toque abre `url`) |
+| `person_carousel` | `PersonCarousel` | `title?`, `people[{name, subtitle?, imageUrl?}]` (circular photo) |
+| `video_carousel` | `VideoCarousel` | `title?`, `videos[{title, url, thumbnailUrl?}]` (tapping opens `url`) |
 
-Nos carrosséis, itens inválidos (sem `name`, sem `title`/`url`) são descartados; carrossel sem itens válidos é descartado inteiro.
+In carousels, invalid items (no `name`, no `title`/`url`) are dropped; a carousel with no valid items is dropped entirely.
 
-Ícones são chaves semânticas (`calendar`, `money`, `star`, `info`, `person`, `place`, `thumb_up`, `build`); chave desconhecida = linha sem ícone.
+Icons are semantic keys (`calendar`, `money`, `star`, `info`, `person`, `place`, `thumb_up`, `build`); an unknown key means a row without an icon.
 
-**Regras:**
-- Textos chegam **prontos para exibição** (rótulos e valores formatados pelo servidor).
-- O app **ignora** tipos que não conhece: o backend pode lançar um bloco novo sem quebrar versões antigas.
-- **Tipo novo:** adicionar no `SduiComponent`, no `SduiParser` e no `SduiComponentView`, com teste no `SduiParserTest`.
+**Rules:**
+- Texts arrive **ready to display** (labels and values formatted by the server).
+- The app **ignores** types it doesn't know: the backend can ship a new block without breaking old versions.
+- **New type:** add it to `SduiComponent`, `SduiParser` and `SduiComponentView`, with a test in `SduiParserTest` ([guide](docs/how-to/add-sdui-block.md)).
 
-**Backend simulado:** os rótulos vêm de `strings.xml` do `feature:moviedetail:data` (via `MovieDetailLayoutStrings`, injetado), e números e datas seguem o locale do aparelho. `MovieDetailLayoutService` (`feature:moviedetail:data/sdui`) monta, a partir da resposta da TMDB, o mesmo JSON que um endpoint real devolveria (inclusive um bloco `ar_experience` desconhecido, para demonstrar a tolerância).
+**Simulated backend:** labels come from `feature:moviedetail:data`'s `strings.xml` (through the injected `MovieDetailLayoutStrings`), and numbers and dates follow the device locale. `MovieDetailLayoutService` (`feature:moviedetail:data/sdui`) builds, from the TMDB response, the same JSON a real endpoint would return (including an unknown `ar_experience` block, to demonstrate the tolerance).
 
-Ordem dos blocos: ficha técnica → elenco → trailers → gêneros/produtoras/países/idiomas → links. Regras do backend simulado:
-- **Elenco:** `credits.cast` ordenado por `order` (ordem dos créditos), no máximo 15; `subtitle` = personagem; foto `w185`.
-- **Trailers:** só `site = YouTube` e `type` `Trailer` ou `Teaser`; trailers antes de teasers e oficiais primeiro; no máximo 10. `url` = `youtube.com/watch?v={key}` (abre no app do YouTube ou no navegador), miniatura = `img.youtube.com/vi/{key}/hqdefault.jpg`. Para usar um backend de verdade, troque essa classe por uma chamada Retrofit; parser, domain e UI não mudam.
+Block order: facts → cast → trailers → genres/companies/countries/languages → links. Simulated backend rules:
+- **Cast:** `credits.cast` sorted by `order` (credits order), at most 15; `subtitle` = character; `w185` photo.
+- **Trailers:** only `site = YouTube` and `type` `Trailer` or `Teaser`; trailers before teasers and official ones first; at most 10. `url` = `youtube.com/watch?v={key}` (opens in the YouTube app or the browser), thumbnail = `img.youtube.com/vi/{key}/hqdefault.jpg`. To use a real backend, replace this class with a Retrofit call; parser, domain and UI don't change.
 
-### 7.11 Tracking e erros (Firebase Analytics + Crashlytics)
+### 7.11 Tracking and errors (Firebase Analytics + Crashlytics)
 
 ```
-features ──► Analytics.track(evento)            ErrorReporter.recordNonFatal(...)
+features ──► Analytics.track(event)             ErrorReporter.recordNonFatal(...)
                  │ CompositeAnalytics                 │ CompositeErrorReporter
                  ▼  Set<AnalyticsTracker>             ▼  Set<ErrorTracker>
      ┌───────────┴───────────┐              ┌─────────┴─────────┐
@@ -804,33 +781,33 @@ features ──► Analytics.track(evento)            ErrorReporter.recordNonFat
  (core:analytics-firebase) (app/src/debug) (analytics-firebase) (app/src/debug)
 ```
 
-- **`core:analytics` (JVM):** `Analytics` e `ErrorReporter` (o que o app usa), `AnalyticsTracker` e `ErrorTracker` (destinos), eventos e parâmetros, `reportIfUnexpected`.
-- **Destinos por multibinding:** o Firebase contribui com `@ElementsIntoSet`, porque é condicional: sem `google-services.json` o conjunto é vazio e o app funciona igual. O debug soma o Logcat com `@IntoSet` (`BuildTypeAnalyticsModule` em `src/debug`; vazio em `src/release`). Os conjuntos são declarados com `@Multibinds` e podem ficar vazios.
-- **Um destino com falha não derruba os outros** (`runCatching` no composite).
-- **Assíncrono numa fila serializada:** `CompositeAnalytics` e `CompositeErrorReporter` despacham num `CoroutineDispatcher` injetado com o qualifier `@AnalyticsDispatcher`, que em produção é `Dispatchers.IO.limitedParallelism(1)` (`AnalyticsDispatcherModule`), dentro de um escopo próprio com `SupervisorJob`. Resultado: `track` devolve na hora (um destino lento nunca trava a main thread de quem chamou) e, como a paralelidade é 1, os eventos são processados na ordem em que foram disparados (o Firebase carimba o timestamp no `logEvent`, então a ordem de execução importa). Nos testes, `UnconfinedTestDispatcher` mantém tudo síncrono e `StandardTestDispatcher` prova que nada roda antes de `advanceUntilIdle()`.
-- **Konsist garante** que só `core:analytics-firebase` e `core:ai-firebase` importam `com.google.firebase.*`.
+- **`core:analytics` (JVM):** `Analytics` and `ErrorReporter` (what the app uses), `AnalyticsTracker` and `ErrorTracker` (destinations), events and parameters, `reportIfUnexpected`.
+- **Destinations through multibinding:** Firebase contributes with `@ElementsIntoSet`, because it is conditional: without `google-services.json` the set is empty and the app works the same. Debug adds Logcat with `@IntoSet` (`BuildTypeAnalyticsModule` in `src/debug`; empty in `src/release`). The sets are declared with `@Multibinds` and may be empty.
+- **A failing destination doesn't take down the others** (`runCatching` in the composite).
+- **Asynchronous on a serialized queue:** `CompositeAnalytics` and `CompositeErrorReporter` dispatch on a `CoroutineDispatcher` injected with the `@AnalyticsDispatcher` qualifier, which in production is `Dispatchers.IO.limitedParallelism(1)` (`AnalyticsDispatcherModule`), inside their own scope with a `SupervisorJob`. Result: `track` returns immediately (a slow destination never blocks the caller's main thread) and, since parallelism is 1, events are processed in the order they were fired (Firebase stamps the timestamp in `logEvent`, so execution order matters). In tests, `UnconfinedTestDispatcher` keeps everything synchronous and `StandardTestDispatcher` proves nothing runs before `advanceUntilIdle()`.
+- **Konsist enforces** that only `core:analytics-firebase` and `core:ai-firebase` import `com.google.firebase.*`.
 
-**Eventos (v1)**
+**Events (v1)**
 
-| Evento | Parâmetros | Onde |
+| Event | Parameters | Where |
 |---|---|---|
-| `screen_view` | `screen_name` (`movies`, `movie_detail`, `favorites`, `settings`) | `TrackScreenView(...)` no topo de cada `*Screen` (via `LocalAnalytics`) |
-| `search` | `search_term` | `MoviesViewModel`, um por busca efetiva (após debounce, ≥ 2 caracteres) |
-| `search_results` | `search_term`, `has_results` (`true`/`false`), `first_page_count` (itens da 1ª página; 20 = "pelo menos 20") | Tela avisa o ViewModel quando a busca termina de carregar |
-| `movie_opened` | `movie_id`, `source` (`popular`, `search`, `ai_search`, `favorites`) | ViewModels de lista, no clique |
-| `favorite_added` / `favorite_removed` | `movie_id`, `source` (+ `detail`) | Todos os ViewModels que favoritam, com o estado devolvido pelo use case |
-| `settings_changed` | `setting` (`theme_mode`, `dynamic_color`, `language`), `value` (ex.: `dark`, `true`, `en`, `system`) | `SettingsViewModel`, a cada alteração |
-| `ai_search` | `search_term`, `outcome` (`understood`, `not_understood`, `unavailable`), `filter_count` | `MoviesViewModel`, a cada busca com IA enviada |
+| `screen_view` | `screen_name` (`movies`, `movie_detail`, `favorites`, `settings`) | `TrackScreenView(...)` at the top of each `*Screen` (through `LocalAnalytics`) |
+| `search` | `search_term` | `MoviesViewModel`, one per effective search (after debounce, ≥ 2 characters) |
+| `search_results` | `search_term`, `has_results` (`true`/`false`), `first_page_count` (items on the 1st page; 20 = "at least 20") | The screen notifies the ViewModel when the search finishes loading |
+| `movie_opened` | `movie_id`, `source` (`popular`, `search`, `ai_search`, `favorites`) | List ViewModels, on tap |
+| `favorite_added` / `favorite_removed` | `movie_id`, `source` (+ `detail`) | Every ViewModel that toggles favorites, with the state returned by the use case |
+| `settings_changed` | `setting` (`theme_mode`, `dynamic_color`, `language`), `value` (e.g. `dark`, `true`, `en`, `system`) | `SettingsViewModel`, on each change |
+| `ai_search` | `search_term`, `outcome` (`understood`, `not_understood`, `unavailable`), `filter_count` | `MoviesViewModel`, on each submitted AI search |
 
-**Crash de teste:** no build **debug** há um botão flutuante (⚠) nas abas que força um crash, para validar o Crashlytics. O relatório chega ao console na próxima abertura do app. No release o botão não existe (`DebugOverlay` vazio em `src/release`).
+**Test crash:** the **debug** build has a floating button (⚠) on the tabs that forces a crash, to validate Crashlytics. The report reaches the console the next time the app opens. In release the button doesn't exist (empty `DebugOverlay` in `src/release`).
 
-**Erros não fatais:** só o inesperado vira não fatal (`DomainError.Server` e `Unknown`); sem internet, 401, 404 e 429 são previstos. São reportados no **data**, onde a exceção original (com stack trace) ainda existe: `MoviesPagingSource` e `safeApiCall(onFailure = ...)`, com o atributo `origin`. Crashes são capturados automaticamente pelo Crashlytics.
+**Non-fatal errors:** only the unexpected becomes non-fatal (`DomainError.Server` and `Unknown`); no internet, 401, 404 and 429 are expected. They are reported in **data**, where the original exception (with its stack trace) still exists: `MoviesPagingSource` and `safeApiCall(onFailure = ...)`, with the `origin` attribute. Crashes are captured automatically by Crashlytics.
 
-**Configuração:** `app/google-services.json` (fora do Git). Os plugins `google-services` e `crashlytics` só são aplicados quando o arquivo existe. No CI o arquivo é criado a partir do secret `GOOGLE_SERVICES_JSON`. Para ver eventos em tempo real: Logcat filtrado por `Analytics` (debug) ou **DebugView** no console (`adb shell setprop debug.firebase.analytics.app com.faas.myfavoritefilms`).
+**Configuration:** `app/google-services.json` (outside Git). The `google-services` and `crashlytics` plugins are only applied when the file exists. In CI the file is created from the `GOOGLE_SERVICES_JSON` secret. To see events in real time: Logcat filtered by `Analytics` (debug) or **DebugView** in the console (`adb shell setprop debug.firebase.analytics.app com.faas.myfavoritefilms`).
 
-**Evento novo:** criar a fábrica em `AnalyticsEvent.kt` (nomes até 40 caracteres, `snake_case`), chamar no ViewModel e afirmar no teste do ViewModel com `TestAnalytics` (`core:testing`).
+**New event:** create the factory in `AnalyticsEvent.kt` (names up to 40 characters, `snake_case`), call it from the ViewModel and assert it in the ViewModel test with `TestAnalytics` (`core:testing`). Guide: [add-analytics-event.md](docs/how-to/add-analytics-event.md).
 
-### 7.12 Preferências do usuário (tema e idioma)
+### 7.12 User preferences (theme and language)
 
 ```
 SettingsScreen ─► SettingsViewModel ─► use cases (core:domain) ─► UserPreferencesRepository
@@ -841,70 +818,69 @@ SettingsScreen ─► SettingsViewModel ─► use cases (core:domain) ─► Us
 MainActivity ◄─ MainActivityViewModel ◄─ observeUserPreferences()  → MoviesTheme(darkTheme, dynamicColor)
 ```
 
-- **Modelo (`core:domain`):** `UserPreferences(themeMode, useDynamicColor, language)`, com `ThemeMode { SYSTEM, LIGHT, DARK }` e `AppLanguage { SYSTEM, PORTUGUESE_BRAZIL, ENGLISH }`. Valor desconhecido no disco volta ao padrão (no mapper do `core:data`).
-- **Armazenamento:** **DataStore Preferences** (não `SharedPreferences`), um único `DataStore` `@Singleton` criado no `DataStoreModule`. Arquivo corrompido vira preferências vazias (`ReplaceFileCorruptionHandler`) e `IOException` na leitura emite vazio.
-- **Tema:** o `MainActivity` não desenha nada enquanto as preferências carregam (evita piscar o tema errado), depois aplica `MoviesTheme` e reconfigura `enableEdgeToEdge` quando o modo escuro muda. Cor dinâmica só aparece no Android 12+.
-- **Idioma: o sistema é a fonte da verdade.** O app usa o idioma por app do Android (`AppCompatDelegate.setApplicationLocales`, `AppCompatActivity`, `locales_config.xml` e o serviço `AppLocalesMetadataHolderService` com `autoStoreLocales` para Android < 13). `SetAppLanguageUseCase` grava no DataStore e aplica via `AppLanguageApplier` (interface no domain, `AppCompatLanguageApplier` no `:app`). Como o usuário pode trocar o idioma nas configurações do sistema, o `SyncAppLanguageUseCase` roda ao abrir o app e copia o idioma atual do sistema para o DataStore. Trocar o idioma recria a Activity (comportamento do Android).
-- **Testes:** `UserPreferencesDataSourceTest` (DataStore real em pasta temporária), `UserPreferencesRepositoryImplTest`, testes dos use cases com `FakeUserPreferencesRepository` e `FakeAppLanguageApplier` (`core:testing`), `SettingsViewModelTest`, `SettingsContentTest`, screenshots de `SettingsContent` e `MainActivityViewModelTest`.
+- **Model (`core:domain`):** `UserPreferences(themeMode, useDynamicColor, language)`, with `ThemeMode { SYSTEM, LIGHT, DARK }` and `AppLanguage { SYSTEM, PORTUGUESE_BRAZIL, ENGLISH }`. An unknown value on disk falls back to the default (in `core:data`'s mapper).
+- **Storage:** **DataStore Preferences** (not `SharedPreferences`), a single `@Singleton` `DataStore` created in `DataStoreModule`. A corrupted file becomes empty preferences (`ReplaceFileCorruptionHandler`) and an `IOException` while reading emits empty.
+- **Theme:** `MainActivity` draws nothing while the preferences load (avoids flashing the wrong theme), then applies `MoviesTheme` and reconfigures `enableEdgeToEdge` when dark mode changes. Dynamic color only shows on Android 12+.
+- **Language: the system is the source of truth.** The app uses Android's per-app language (`AppCompatDelegate.setApplicationLocales`, `AppCompatActivity`, `locales_config.xml` and the `AppLocalesMetadataHolderService` service with `autoStoreLocales` for Android < 13). `SetAppLanguageUseCase` writes to DataStore and applies through `AppLanguageApplier` (interface in the domain, `AppCompatLanguageApplier` in `:app`). Since the user can change the language in the system settings, `SyncAppLanguageUseCase` runs when the app opens and copies the current system language to DataStore. Changing the language recreates the Activity (Android behavior).
+- **Tests:** `UserPreferencesDataSourceTest` (real DataStore in a temporary folder), `UserPreferencesRepositoryImplTest`, use case tests with `FakeUserPreferencesRepository` and `FakeAppLanguageApplier` (`core:testing`), `SettingsViewModelTest`, `SettingsContentTest`, `SettingsContent` screenshots and `MainActivityViewModelTest`.
 
-### 7.13 Busca com IA (Gemini via Firebase AI Logic)
+### 7.13 AI search (Gemini through Firebase AI Logic)
 
 ```
-"suspense dos anos 90 bem avaliado"
-   │ MoviesViewModel.onSubmitSearch()  (só no modo IA, ao tocar em buscar no teclado)
+"90s thriller with great reviews"
+   │ MoviesViewModel.onSubmitSearch()  (only in AI mode, when tapping search on the keyboard)
    ▼
-InterpretMovieQueryUseCase ── repository.genres() ──► GET genre/movie/list (cache por idioma)
+InterpretMovieQueryUseCase ── repository.genres() ──► GET genre/movie/list (cached per language)
    │ MovieQueryInterpreter (domain)  ◄── AiMovieQueryInterpreter (feature:movies:data)
    │                                        │ AiJsonGenerator (core:ai)  ◄── GeminiJsonGenerator (core:ai-firebase)
    ▼                                        ▼
 QueryInterpretation: Understood(MovieFilters) | NotUnderstood | Unavailable(DomainError)
-   │ Understood → GetMoviesByFiltersUseCase → GET discover/movie (mesmo Paging da lista)
-   └ NotUnderstood / Unavailable → busca por título com o mesmo texto + aviso na tela
+   │ Understood → GetMoviesByFiltersUseCase → GET discover/movie (same Paging as the list)
+   └ NotUnderstood / Unavailable → title search with the same text + a notice on screen
 ```
 
-- **A IA não inventa filmes.** Ela só devolve filtros num JSON com schema fixo (saída estruturada): `genreIds`, `yearFrom`, `yearTo`, `minRating`, `sort`. Quem traz os filmes é a TMDB. Isso elimina alucinação de títulos.
-- **Validação no data, nunca confiança cega:** ids de gênero que não existem na lista da TMDB são descartados (máximo 3), anos fora de 1874 até o ano atual + 2 são ignorados, anos invertidos são trocados, nota é limitada a 0–10 e `sort` desconhecido vira `POPULARITY`. Filtros sem critério nenhum = `NotUnderstood`.
-- **Prompt:** as regras e a lista de gêneros vão como instrução de sistema; o texto do usuário vai separado, como dado. A instrução manda ignorar ordens escritas dentro do pedido (proteção básica contra prompt injection). `temperature = 0` para respostas estáveis.
-- **Contrato isolado como no analytics:** `core:ai` (JVM) define `AiJsonGenerator`, `AiSchema` (subconjunto de JSON Schema próprio) e `AiException` (`Unavailable`, `QuotaExceeded`, `Failed`). `core:ai-firebase` é o único lugar com `firebase-ai`: converte `AiSchema` no `Schema` do Firebase e traduz as exceções do SDK. Trocar Gemini por outro provedor (ou por um backend próprio) é trocar só esse módulo.
-- **Sem Firebase configurado** (sem `google-services.json`), o `AiFirebaseModule` entrega `UnavailableAiJsonGenerator` e a tela cai na busca por título. O app continua compilando e funcionando.
-- **Erros:** sem internet ou timeout → `Network`; cota estourada → `RateLimited`; IA indisponível → `Unknown` sem reportar; resposta inválida ou falha do SDK → `Unknown` reportado como não fatal (`origin = movies_ai_interpreter`).
-- **Modelo:** `gemini-3.5-flash-lite` (estável, sem desligamento antes de 2027-07), constante em `GeminiJsonGenerator`. Provedor: **Gemini Developer API** (cota gratuita no plano Spark).
-- **App Check (obrigatório para o AI Logic desde 2026-11-02):** `AppCheckInstaller` em `core:ai-firebase`, chamado no `MoviesApplication.onCreate`. `src/debug` instala o `DebugAppCheckProviderFactory` (o token aparece no Logcat, filtro `DebugAppCheckProvider`, e é cadastrado em App Check → Apps → Manage debug tokens); `src/release` instala o Play Integrity. Nunca versionar o token de debug.
-- **UI:** `SingleChoiceSegmentedButtonRow` (Título | Buscar com IA). No modo IA, digitar não busca; a busca sai pelo botão de buscar do teclado. Estados: `Idle` (dica), `Interpreting` (lupa vira loading, a lista anterior continua), `Applied` (chips `InputChip`; tocar remove o filtro; sem filtros volta aos populares), `Fallback` (aviso explicando que está mostrando a busca por título).
-- **Testes:** use cases com `FakeMoviesRepository` e interpretador fake; `AiMovieQueryInterpreterTest` com `AiJsonGenerator` fake (validação, prompt, mapeamento de erros); `DiscoverQueryTest`; MockWebServer para `discover/movie` e `genre/movie/list`; ViewModel (aplicar, plano B, remover chips, analytics); Compose UI e screenshots dos estados de IA. Nenhum teste chama o Gemini de verdade.
+- **The AI doesn't invent movies.** It only returns filters in a JSON with a fixed schema (structured output): `genreIds`, `yearFrom`, `yearTo`, `minRating`, `sort`. TMDB brings the movies. This eliminates hallucinated titles.
+- **Validation in data, never blind trust:** genre ids that don't exist in TMDB's list are dropped (at most 3), years outside 1874 to the current year + 2 are ignored, inverted years are swapped, the rating is clamped to 0–10 and an unknown `sort` becomes `POPULARITY`. Filters without any criterion = `NotUnderstood`.
+- **Prompt:** the rules and the genre list go as the system instruction; the user's text goes separately, as data. The instruction says to ignore commands written inside the request (basic prompt-injection protection). `temperature = 0` for stable answers.
+- **Isolated contract, like analytics:** `core:ai` (JVM) defines `AiJsonGenerator`, `AiSchema` (its own JSON Schema subset) and `AiException` (`Unavailable`, `QuotaExceeded`, `Failed`). `core:ai-firebase` is the only place with `firebase-ai`: it converts `AiSchema` into Firebase's `Schema` and translates the SDK exceptions. Replacing Gemini with another provider (or an own backend) means replacing only this module.
+- **Without Firebase configured** (no `google-services.json`), `AiFirebaseModule` provides `UnavailableAiJsonGenerator` and the screen falls back to title search. The app still builds and works.
+- **Errors:** no internet or timeout → `Network`; quota exceeded → `RateLimited`; AI unavailable → `Unknown` without reporting; invalid response or SDK failure → `Unknown` reported as non-fatal (`origin = movies_ai_interpreter`).
+- **Model:** `gemini-3.5-flash-lite` (stable, no shutdown before 2027-07), a constant in `GeminiJsonGenerator`. Provider: **Gemini Developer API** (free quota on the Spark plan).
+- **App Check (required by AI Logic since 2026-11-02):** `AppCheckInstaller` in `core:ai-firebase`, called from `MoviesApplication.onCreate`. `src/debug` installs `DebugAppCheckProviderFactory` (the token shows up in Logcat, filter `DebugAppCheckProvider`, and is registered under App Check → Apps → Manage debug tokens); `src/release` installs Play Integrity. Never commit the debug token.
+- **UI:** `SingleChoiceSegmentedButtonRow` (Title | Search with AI). In AI mode, typing doesn't search; the search fires from the keyboard's search button. States: `Idle` (hint), `Interpreting` (the magnifier becomes a spinner, the previous list stays), `Applied` (`InputChip` chips; tapping removes the filter; without filters it goes back to popular movies), `Fallback` (a notice explaining it is showing the title search).
+- **Tests:** use cases with `FakeMoviesRepository` and a fake interpreter; `AiMovieQueryInterpreterTest` with a fake `AiJsonGenerator` (validation, prompt, error mapping); `DiscoverQueryTest`; MockWebServer for `discover/movie` and `genre/movie/list`; ViewModel (apply, fallback, removing chips, analytics); Compose UI and screenshots of the AI states. No test calls the real Gemini.
 
-### 7.14 Favoritos: módulo `api` + camadas (ADR-17)
+### 7.14 Favorites: `api` module + layers (ADR-17)
 
 ```
 feature:movies:*  ─────┐
 feature:moviedetail:* ─┴─► :feature:favorites:api ◄── :feature:favorites:domain ◄── :feature:favorites:data
-                          FavoriteMovie               *UseCaseImpl                  FavoritesRepositoryImpl (Room)
-                          ObserveFavoriteIdsUseCase   FavoritesRepository           FavoritesDataModule (@Binds)
-                          ObserveIsFavoriteUseCase    ObserveFavoritesUseCase
+                          FavoriteMovie               *UseCaseImpl                  FavoritesLocalDataSource (Room)
+                          ObserveFavoriteIdsUseCase   FavoritesRepository           FavoritesRepositoryImpl
+                          ObserveIsFavoriteUseCase    ObserveFavoritesUseCase       FavoritesDataModule (@Binds)
                           ToggleFavoriteUseCase                   ▲
-                                                      :feature:favorites:presentation (tela, ViewModel)
-:app (composition root) depende de presentation + data, e instala FavoritesDataModule
+                                                      :feature:favorites:presentation (screen, ViewModel)
+:app (composition root) depends on presentation + data, and installs FavoritesDataModule
 ```
 
-- **`:api` (JVM):** só contratos. Interfaces finas por caso de uso (Interface Segregation): a lista só conhece `ObserveFavoriteIds` e `ToggleFavorite`; o detalhe só `ObserveIsFavorite` e `ToggleFavorite`.
-- **`:domain` (JVM):** `FavoritesRepository`, as implementações `ObserveFavoriteIdsUseCaseImpl`, `ObserveIsFavoriteUseCaseImpl` e `ToggleFavoriteUseCaseImpl`, e o `ObserveFavoritesUseCase`, que só a aba Favoritos usa. Publica `testFixtures` com o `FakeFavoritesRepository`.
-- **`:data`:** `FavoritesRepositoryImpl` sobre o `FavoriteMovieDao` e o `FavoritesDataModule`, que liga o repositório (`@Singleton`) e cada interface do `:api` à implementação do `:domain`. O binding fica no `data` porque a regra do Konsist proíbe Dagger no `domain` (que é JVM puro); por isso os `*UseCaseImpl` são públicos. A visibilidade continua protegida pelo grafo: nenhuma outra feature pode depender do `domain` dos favoritos.
-- **`:presentation`:** `FavoritesViewModel`, tela, navegação e o `FavoritesPresentationModule` (no `ViewModelComponent`).
-- **Room:** `FavoriteMovieEntity` e `FavoriteMovieDao` continuam em `core:database`, porque o `@Database` central precisa listar as entities e o core não pode depender de feature.
-- **Testes:** `movies` e `moviedetail` usam `testImplementation(testFixtures(projects.feature.favorites.api))` (`FakeFavorites`); o `presentation` dos favoritos usa os `testFixtures` do `:domain` (`FakeFavoritesRepository`).
-- **Regras:** module-graph-assert proíbe outra feature de depender de `:feature:favorites:(domain|data|presentation)` e o `:api` de depender de infraestrutura ou das camadas; Konsist só permite importar outra feature pelo pacote `.api.` e cobra `*UseCaseImplTest` para cada `*UseCaseImpl` em `domain.usecase`.
-- **Por que não um `:impl` único:** já foi assim, e quebrava o padrão da ADR-03. O `api` resolve a visibilidade entre features; as camadas resolvem a organização interna. São decisões ortogonais, e com módulos de camada o compilador garante que a tela não toca no Room.
-- **Quando usar `api`:** só quando a feature é consumida por outras. `movies`, `moviedetail` e `settings` não têm `api`.
+- **`:api` (JVM):** contracts only, one file per interface. Thin interfaces per use case (Interface Segregation): the list only knows `ObserveFavoriteIds` and `ToggleFavorite`; the detail only `ObserveIsFavorite` and `ToggleFavorite`.
+- **`:domain` (JVM):** `FavoritesRepository`, the implementations `ObserveFavoriteIdsUseCaseImpl`, `ObserveIsFavoriteUseCaseImpl` and `ToggleFavoriteUseCaseImpl`, and `ObserveFavoritesUseCase`, used only by the Favorites tab. Publishes `testFixtures` with `FakeFavoritesRepository`.
+- **`:data`:** `FavoritesLocalDataSource` over `FavoriteMovieDao`, `FavoritesRepositoryImpl` over the data source, and `FavoritesDataModule`, which binds the repository (`@Singleton`) and each `:api` interface to its `:domain` implementation. The binding lives in `data` because the Konsist rule forbids Dagger in `domain` (pure JVM); that is why the `*UseCaseImpl` classes are public. Visibility is still protected by the graph: no other feature can depend on the favorites' `domain`.
+- **`:presentation`:** `FavoritesViewModel`, screen, navigation and `FavoritesPresentationModule` (in `ViewModelComponent`).
+- **Room:** `FavoriteMovieEntity` and `FavoriteMovieDao` stay in `core:database`, because the central `@Database` must list the entities and the core can't depend on features.
+- **Tests:** `movies` and `moviedetail` use `testImplementation(testFixtures(projects.feature.favorites.api))` (`FakeFavorites`); the favorites `presentation` uses the `:domain` `testFixtures` (`FakeFavoritesRepository`).
+- **Rules:** module-graph-assert forbids another feature from depending on `:feature:favorites:(domain|data|presentation)` and the `:api` module from depending on infrastructure or on the layers; Konsist only allows importing another feature through the `.api.` package and requires a `*UseCaseImplTest` for each `*UseCaseImpl` in `domain.usecase`.
+- **Why not a single `:impl`:** it used to be like that, and it broke the ADR-03 pattern. The `api` module solves visibility between features; the layers solve internal organization. They are orthogonal decisions, and with layer modules the compiler guarantees the screen never touches Room.
+- **When to use `api`:** only when the feature is consumed by others. `movies`, `moviedetail` and `settings` have no `api` module.
 
-## 8. Feature: movies (lista + busca)
+## 8. Feature: movies (list + search)
 
-> **Implementado (v1.3):** populares + **busca por título** (debounce de 400 ms, mínimo de 2 caracteres, lupa vira spinner enquanto busca), favoritar na grade, pull-to-refresh, skeleton no carregamento, rodapé de paginação com retry.
-> **Diferença do desenho abaixo:** o modelo de UI é o `MovieCardUi` do `core:ui` (ADR-15), e não um `MovieItemUi` próprio; o ViewModel também expõe `searchQuery` (busca efetiva, após debounce) para a tela voltar ao topo e montar a mensagem de vazio.
+> **Implemented (v1.3):** popular movies + **title search** (400 ms debounce, minimum of 2 characters, the magnifier becomes a spinner while searching), favorite toggle on the grid, pull-to-refresh, skeleton while loading, pagination footer with retry. AI search was added later (section 7.13).
+> **Difference from the design below:** the UI model is `core:ui`'s `MovieCardUi` (ADR-15), not a feature-specific `MovieItemUi`; the ViewModel also exposes `searchQuery` (the effective search, after debounce) so the screen can scroll back to the top and build the empty message.
 
 ### 8.1 Domain (`feature:movies:domain`, JVM)
 
 ```kotlin
-// model/Movie.kt
 data class Movie(
     val id: Int,
     val title: String,
@@ -914,17 +890,13 @@ data class Movie(
     val rating: Double,
 )
 
-// repository/MoviesRepository.kt
 interface MoviesRepository {
     fun popularMovies(): Flow<PagingData<Movie>>
     fun searchMovies(query: String): Flow<PagingData<Movie>>
+    fun discoverMovies(filters: MovieFilters): Flow<PagingData<Movie>>
+    suspend fun genres(): AppResult<List<Genre>>
 }
 
-// usecase/GetMoviesUseCase.kt
-/**
- * Regra de negócio da tela: busca vazia ou curta demais mostra populares;
- * caso contrário, busca por título.
- */
 class GetMoviesUseCase @Inject constructor(
     private val repository: MoviesRepository,
 ) {
@@ -942,28 +914,29 @@ class GetMoviesUseCase @Inject constructor(
     }
 }
 
-// mapper/MovieFavoriteMapper.kt
 fun Movie.toFavoriteMovie() = FavoriteMovie(id = id, title = title, posterUrl = posterUrl, rating = rating)
 ```
+
+The screen's business rule lives in `GetMoviesUseCase`: an empty or too-short query shows popular movies; otherwise it searches by title. `toFavoriteMovie()` maps to the `:feature:favorites:api` model.
 
 **`feature/movies/domain/build.gradle.kts`**
 
 ```kotlin
 plugins {
     alias(libs.plugins.movies.jvm.library)
+    alias(libs.plugins.movies.dagger)
 }
 
 dependencies {
     api(projects.core.common)
-    api(projects.core.domain)
-    api(libs.androidx.paging.common)
+    api(projects.feature.favorites.api)
+    testImplementation(projects.core.testing)
 }
 ```
 
 ### 8.2 Data (`feature:movies:data`)
 
 ```kotlin
-// remote/dto/PagedResponseDto.kt
 @Serializable
 internal data class PagedResponseDto<T>(
     val page: Int,
@@ -972,7 +945,6 @@ internal data class PagedResponseDto<T>(
     @SerialName("total_results") val totalResults: Int,
 )
 
-// remote/dto/MovieDto.kt
 @Serializable
 internal data class MovieDto(
     val id: Int,
@@ -983,7 +955,6 @@ internal data class MovieDto(
     @SerialName("vote_average") val voteAverage: Double = 0.0,
 )
 
-// remote/api/MoviesApi.kt
 internal interface MoviesApi {
     @GET("movie/popular")
     suspend fun getPopular(@Query("page") page: Int): PagedResponseDto<MovieDto>
@@ -996,7 +967,6 @@ internal interface MoviesApi {
     ): PagedResponseDto<MovieDto>
 }
 
-// mapper/MovieMapper.kt
 internal fun MovieDto.toDomain() = Movie(
     id = id,
     title = title,
@@ -1008,7 +978,6 @@ internal fun MovieDto.toDomain() = Movie(
 ```
 
 ```kotlin
-// paging/MoviesPagingSource.kt
 internal class MoviesPagingSource(
     private val fetch: suspend (page: Int) -> PagedResponseDto<MovieDto>,
 ) : PagingSource<Int, Movie>() {
@@ -1042,16 +1011,22 @@ internal class MoviesPagingSource(
     }
 }
 
-// repository/MoviesRepositoryImpl.kt
-internal class MoviesRepositoryImpl @Inject constructor(
+internal class MoviesRemoteDataSource @Inject constructor(
     private val api: MoviesApi,
+) {
+    suspend fun popular(page: Int): PagedResponseDto<MovieDto> = api.getPopular(page)
+    suspend fun search(query: String, page: Int): PagedResponseDto<MovieDto> = api.search(query = query, page = page)
+}
+
+internal class MoviesRepositoryImpl @Inject constructor(
+    private val remoteDataSource: MoviesRemoteDataSource,
 ) : MoviesRepository {
 
     override fun popularMovies(): Flow<PagingData<Movie>> =
-        pager { page -> api.getPopular(page) }
+        pager { page -> remoteDataSource.popular(page) }
 
     override fun searchMovies(query: String): Flow<PagingData<Movie>> =
-        pager { page -> api.search(query = query, page = page) }
+        pager { page -> remoteDataSource.search(query, page) }
 
     private fun pager(fetch: suspend (Int) -> PagedResponseDto<MovieDto>) = Pager(
         config = PagingConfig(pageSize = TMDB_PAGE_SIZE, enablePlaceholders = false),
@@ -1061,9 +1036,8 @@ internal class MoviesRepositoryImpl @Inject constructor(
     private companion object { const val TMDB_PAGE_SIZE = 20 }
 }
 
-// di/MoviesDataModule.kt
 @Module(includes = [MoviesDataBindsModule::class])
-object MoviesDataModule                       // instalado no AppComponent
+object MoviesDataModule
 
 @Module
 internal abstract class MoviesDataBindsModule {
@@ -1078,6 +1052,8 @@ internal abstract class MoviesDataBindsModule {
 }
 ```
 
+Simplified excerpt: the real repository also implements `discoverMovies` and `genres` (AI search, section 7.13) and reports unexpected errors. `MoviesDataModule` is installed in `AppComponent`.
+
 **`feature/movies/data/build.gradle.kts`**
 
 ```kotlin
@@ -1090,23 +1066,23 @@ android {
 }
 
 dependencies {
-    implementation(projects.feature.movies.domain)
-    testImplementation(libs.androidx.paging.testing)
+    api(projects.feature.movies.domain)
+    implementation(projects.core.ai)
 }
 ```
 
 ### 8.3 Presentation (`feature:movies:presentation`)
 
-**Modelo de UI**: a formatação fica aqui, não no domain.
+**UI model**: formatting lives here, not in the domain.
 
 ```kotlin
 data class MovieItemUi(
     val id: Int,
     val title: String,
     val posterUrl: String?,
-    val year: String,          // "2024" ou "—"
-    val rating: Double,        // valor bruto (usado para favoritar)
-    val ratingLabel: String,   // "7.8"
+    val year: String,
+    val rating: Double,
+    val ratingLabel: String,
     val isFavorite: Boolean,
 )
 
@@ -1119,12 +1095,11 @@ internal fun Movie.toItemUi(isFavorite: Boolean) = MovieItemUi(
     ratingLabel = String.format(Locale.US, "%.1f", rating),
     isFavorite = isFavorite,
 )
-
-internal fun MovieItemUi.toFavoriteMovie() =
-    FavoriteMovie(id = id, title = title, posterUrl = posterUrl, rating = rating)
 ```
 
-**ViewModel**: busca reativa com debounce, troca automática entre populares e busca, e o estado de favorito combinado em tempo real.
+`year` is `"2024"` or `"—"`, `rating` is the raw value (used for favoriting) and `ratingLabel` the formatted one (`"7.8"`).
+
+**ViewModel**: reactive search with debounce, automatic switch between popular movies and search, and the favorite state combined in real time.
 
 ```kotlin
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -1138,11 +1113,11 @@ class MoviesViewModel @Inject constructor(
     val query: StateFlow<String> = _query.asStateFlow()
 
     val movies: Flow<PagingData<MovieItemUi>> = _query
-        .debounce { if (it.isBlank()) 0L else SEARCH_DEBOUNCE_MS }   // limpar busca é imediato
+        .debounce { if (it.isBlank()) 0L else SEARCH_DEBOUNCE_MS }
         .map(String::trim)
         .distinctUntilChanged()
-        .flatMapLatest { getMovies(it) }                              // cancela a busca anterior
-        .cachedIn(viewModelScope)                                     // sobrevive a rotação
+        .flatMapLatest { getMovies(it) }
+        .cachedIn(viewModelScope)
         .combine(observeFavoriteIds()) { paging, favoriteIds ->
             paging.map { movie -> movie.toItemUi(isFavorite = movie.id in favoriteIds) }
         }
@@ -1161,7 +1136,9 @@ class MoviesViewModel @Inject constructor(
 }
 ```
 
-> Com Paging, os estados de carregamento, erro e vazio vêm de `LazyPagingItems.loadState`, e não de um `UiState` próprio. O `query` é o único estado de tela adicional.
+Clearing the search is immediate (no debounce), `flatMapLatest` cancels the previous search and `cachedIn` survives rotation.
+
+> With Paging, the loading, error and empty states come from `LazyPagingItems.loadState`, not from a custom `UiState`. `query` is the only extra screen state.
 
 **Screen (stateful) + Content (stateless)**
 
@@ -1182,38 +1159,13 @@ internal fun MoviesScreen(
         onToggleFavorite = viewModel::onToggleFavorite,
     )
 }
-
-@Composable
-internal fun MoviesContent(
-    query: String,
-    movies: LazyPagingItems<MovieItemUi>,
-    onQueryChange: (String) -> Unit,
-    onMovieClick: (Int) -> Unit,
-    onToggleFavorite: (MovieItemUi) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // Scaffold
-    //  ├─ topBar: campo de busca (OutlinedTextField/SearchBar) com ícone de limpar
-    //  └─ content:
-    //      when (val refresh = movies.loadState.refresh) {
-    //          is LoadState.Loading -> LoadingContent()
-    //          is LoadState.Error   -> ErrorContent(refresh.error.asDomainError(), onRetry = movies::retry)
-    //          is LoadState.NotLoading ->
-    //              if (movies.itemCount == 0) EmptyContent("Nenhum filme encontrado para \"$query\"")
-    //              else LazyVerticalGrid(GridCells.Adaptive(140.dp)) {
-    //                  items(movies.itemCount, key = movies.itemKey { it.id }) { index ->
-    //                      movies[index]?.let { MovieGridItem(it, onMovieClick, onToggleFavorite) }
-    //                  }
-    //                  // rodapé: loadState.append Loading -> spinner | Error -> botão "tentar novamente"
-    //              }
-    //      }
-}
 ```
 
-### 8.4 Navegação da feature
+`MoviesContent` receives the state and the lambdas. Its layout: a search field at the top; then, depending on `movies.loadState.refresh`, `LoadingContent` (skeleton grid), `ErrorContent(refresh.error.asDomainError(), onRetry = movies::retry)`, `EmptyContent` with a message from `strings.xml`, or the `MovieGrid` keyed by movie id, with a footer that shows a spinner or a retry button according to `loadState.append`.
+
+### 8.4 Feature navigation
 
 ```kotlin
-// navigation/MoviesNavigation.kt
 @Serializable
 data object MoviesRoute
 
@@ -1230,52 +1182,51 @@ fun NavGraphBuilder.moviesScreen(onMovieClick: (movieId: Int) -> Unit) {
 plugins {
     alias(libs.plugins.movies.android.feature.presentation)
 }
-// + um módulo Dagger em di/ com @Binds @IntoMap @ViewModelKey, registrado no ViewModelComponent do :app
 
 android {
     namespace = "com.faas.myfavoritefilms.feature.movies.presentation"
 }
 
 dependencies {
-    implementation(projects.feature.movies.domain)
-    implementation(projects.core.domain)
-    implementation(libs.androidx.paging.compose)
-    testImplementation(libs.androidx.paging.testing)
+    api(projects.feature.movies.domain)
+    testImplementation(testFixtures(projects.feature.favorites.api))
 }
 ```
 
-### 8.5 Fluxo da busca
+Plus a Dagger module in `di/` with `@Binds @IntoMap @ViewModelKey`, registered in `:app`'s `ViewModelComponent`.
+
+### 8.5 Search flow
 
 ```mermaid
 sequenceDiagram
-    actor U as Usuário
+    actor U as User
     participant S as MoviesScreen
     participant VM as MoviesViewModel
     participant UC as GetMoviesUseCase
     participant R as MoviesRepositoryImpl
     participant API as TMDB
 
-    U->>S: digita "matrix"
+    U->>S: types "matrix"
     S->>VM: onQueryChange("matrix")
-    Note over VM: debounce 400 ms, distinctUntilChanged
+    Note over VM: 400 ms debounce, distinctUntilChanged
     VM->>UC: invoke("matrix")
     UC->>R: searchMovies("matrix")
     R->>API: GET search/movie?query=matrix&page=1
     API-->>R: PagedResponseDto
     R-->>VM: Flow<PagingData<Movie>>
-    Note over VM: combine com favoriteIds → MovieItemUi
-    VM-->>S: PagingData<MovieItemUi>
-    S-->>U: grade atualizada
+    Note over VM: combine with favoriteIds → UI model
+    VM-->>S: PagingData<UI model>
+    S-->>U: updated grid
 ```
 
 ---
 
-## 9. Feature: moviedetail (detalhe + favoritar)
+## 9. Feature: moviedetail (detail + favorite)
 
-> **Implementado (v1.3).** Diferenças do desenho abaixo:
-> - `MovieDetail` tem `infoSections: List<SduiComponent>` (seção 7.10), montado no data pelo `MovieDetailLayoutService` + `SduiParser`.
-> - O ViewModel lê o `movieId` com `savedStateHandle.get<Int>("movieId")` (o Navigation grava os campos da rota com o nome do campo), e não com `toRoute()`. Assim o teste roda na JVM, sem Robolectric.
-> - Tela: backdrop com degradê, pôster sobreposto, metadados, gêneros (`LabelChips`), sinopse e os blocos SDUI, numa `LazyColumn`. Carregamento com skeleton; transição entre estados só quando muda o tipo de estado.
+> **Implemented (v1.3).** Differences from the design below:
+> - `MovieDetail` has `infoSections: List<SduiComponent>` (section 7.10), built in data by `MovieDetailLayoutService` + `SduiParser`.
+> - The ViewModel reads `movieId` with `savedStateHandle.get<Int>("movieId")` (Navigation stores the route fields under the field name), not with `toRoute()`. That way the test runs on the JVM, without Robolectric.
+> - Screen: backdrop with a gradient, overlapping poster, metadata, genres (`LabelChips`), synopsis and the SDUI blocks, in a `LazyColumn`. Loading with a skeleton; transitions between states only when the state type changes.
 
 ### 9.1 Domain
 
@@ -1306,7 +1257,7 @@ class GetMovieDetailUseCase @Inject constructor(
 }
 ```
 
-O modelo `MovieDetail` é **intencionalmente separado** do `Movie` da lista. Cada feature é dona dos seus modelos. A pequena duplicação é o preço do isolamento (ADR-05).
+The `MovieDetail` model is **intentionally separate** from the list's `Movie`. Each feature owns its models. The small duplication is the price of isolation (ADR-05).
 
 ### 9.2 Data
 
@@ -1326,28 +1277,38 @@ internal data class MovieDetailDto(
     val genres: List<GenreDto> = emptyList(),
 )
 
-@Serializable
-internal data class GenreDto(val id: Int, val name: String)
-
 internal interface MovieDetailApi {
     @GET("movie/{movie_id}")
     suspend fun getMovieDetail(@Path("movie_id") movieId: Int): MovieDetailDto
 }
 
-internal class MovieDetailRepositoryImpl @Inject constructor(
+internal class MovieDetailRemoteDataSource @Inject constructor(
     private val api: MovieDetailApi,
+) {
+    suspend fun movieDetail(movieId: Int): MovieDetailDto = api.getMovieDetail(movieId)
+}
+
+internal class MovieDetailRepositoryImpl @Inject constructor(
+    private val remoteDataSource: MovieDetailRemoteDataSource,
+    private val layoutService: MovieDetailLayoutService,
+    private val sduiParser: SduiParser,
+    private val errorReporter: ErrorReporter,
 ) : MovieDetailRepository {
-    override suspend fun getMovieDetail(movieId: Int): AppResult<MovieDetail> =
-        safeApiCall { api.getMovieDetail(movieId).toDomain() }
+    override suspend fun getMovieDetail(movieId: Int): AppResult<MovieDetail> = safeApiCall(
+        onFailure = { cause, error -> errorReporter.reportIfUnexpected(cause, error, origin = "movie_detail") },
+    ) {
+        val dto = remoteDataSource.movieDetail(movieId)
+        val sections = sduiParser.parse(layoutService.layoutFor(dto))
+        dto.toDomain(infoSections = sections)
+    }
 }
 ```
 
-O mapper usa `TmdbImages.Size.W500` para o pôster e `W780` para o backdrop. O módulo Dagger segue o mesmo padrão de `MoviesDataModule`.
+The mapper uses `TmdbImages.Size.W500` for the poster and `W780` for the backdrop. The Dagger module follows the same pattern as `MoviesDataModule`.
 
 ### 9.3 Presentation
 
 ```kotlin
-// navigation/MovieDetailNavigation.kt
 @Serializable
 data class MovieDetailRoute(val movieId: Int)
 
@@ -1362,14 +1323,12 @@ fun NavGraphBuilder.movieDetailScreen(onBack: () -> Unit) {
 ```
 
 ```kotlin
-// MovieDetailUiState.kt
 sealed interface MovieDetailUiState {
     data object Loading : MovieDetailUiState
     data class Success(val movie: MovieDetailUi, val isFavorite: Boolean) : MovieDetailUiState
     data class Error(val error: DomainError) : MovieDetailUiState
 }
 
-// model/MovieDetailUi.kt
 data class MovieDetailUi(
     val id: Int,
     val title: String,
@@ -1377,13 +1336,15 @@ data class MovieDetailUi(
     val overview: String,
     val posterUrl: String?,
     val backdropUrl: String?,
-    val releaseDateLabel: String,   // "12 de mar. de 2024"
-    val runtimeLabel: String?,      // "2h 16min"
+    val releaseDateLabel: String,
+    val runtimeLabel: String?,
     val rating: Double,
-    val ratingLabel: String,        // "8.2 (25.431 votos)"
+    val ratingLabel: String,
     val genres: List<String>,
 )
 ```
+
+Labels are already formatted for display, from string resources and the device locale: `releaseDateLabel` like "Mar 12, 2024", `runtimeLabel` like "2h 16min", `ratingLabel` like "8.2 (25,431 votes)".
 
 ```kotlin
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -1394,12 +1355,12 @@ class MovieDetailViewModel @Inject constructor(
     private val toggleFavorite: ToggleFavoriteUseCase,
 ) : ViewModel() {
 
-    private val movieId: Int = savedStateHandle.toRoute<MovieDetailRoute>().movieId
+    private val movieId: Int = checkNotNull(savedStateHandle.get<Int>(MOVIE_ID_ARG))
     private val reload = MutableStateFlow(0)
 
     private val detail: Flow<AppResult<MovieDetail>?> = reload.flatMapLatest {
         flow {
-            emit(null)                          // null = carregando
+            emit(null)
             emit(getMovieDetail(movieId))
         }
     }
@@ -1432,7 +1393,7 @@ class MovieDetailViewModel @Inject constructor(
 }
 ```
 
-O ícone de favorito reage sozinho: o toggle grava no Room, o Room emite em `observeIsFavorite` e o `combine` gera um novo `Success`. Não existe atualização manual de estado (fonte única da verdade).
+`null` in `detail` means loading. The favorite icon reacts on its own: the toggle writes to Room, Room emits on `observeIsFavorite` and `combine` produces a new `Success`. There is no manual state update (single source of truth).
 
 ```kotlin
 @Composable
@@ -1448,20 +1409,9 @@ internal fun MovieDetailScreen(
         onToggleFavorite = viewModel::onToggleFavorite,
     )
 }
-
-@Composable
-internal fun MovieDetailContent(
-    state: MovieDetailUiState,
-    onBack: () -> Unit,
-    onRetry: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // TopAppBar com voltar + FavoriteIconButton (só no Success)
-    // Loading -> LoadingContent | Error -> ErrorContent(error, onRetry)
-    // Success -> backdrop, pôster, título, tagline, ano · duração · nota, chips de gênero, sinopse
-}
 ```
+
+`MovieDetailContent` has a top app bar with back navigation and `FavoriteIconButton` (only in `Success`); `Loading` shows the skeleton, `Error` shows `ErrorContent(error, onRetry)`, and `Success` shows backdrop, poster, title, tagline, year · runtime · rating, genre chips, synopsis and the SDUI blocks.
 
 **`feature/moviedetail/presentation/build.gradle.kts`**
 
@@ -1469,71 +1419,78 @@ internal fun MovieDetailContent(
 plugins {
     alias(libs.plugins.movies.android.feature.presentation)
 }
-// + um módulo Dagger em di/ com @Binds @IntoMap @ViewModelKey, registrado no ViewModelComponent do :app
 
 android {
     namespace = "com.faas.myfavoritefilms.feature.moviedetail.presentation"
 }
 
 dependencies {
-    implementation(projects.feature.moviedetail.domain)
-    implementation(projects.core.domain)
-    testImplementation(libs.androidx.navigation.testing)
+    api(projects.feature.moviedetail.domain)
+    testImplementation(testFixtures(projects.feature.favorites.api))
 }
 ```
 
-### 9.4 Fluxo de favoritar
+Plus a Dagger module in `di/` with `@Binds @IntoMap @ViewModelKey`, registered in `:app`'s `ViewModelComponent`.
+
+### 9.4 Favorite flow
 
 ```mermaid
 sequenceDiagram
-    actor U as Usuário
+    actor U as User
     participant VM as MovieDetailViewModel
     participant T as ToggleFavoriteUseCase
     participant R as FavoritesRepositoryImpl
+    participant DS as FavoritesLocalDataSource
     participant DB as Room
 
     U->>VM: onToggleFavorite()
     VM->>T: invoke(FavoriteMovie)
     T->>R: isFavorite(id)?
-    R->>DB: exists(id)
-    alt já é favorito
+    R->>DS: exists(id)
+    DS->>DB: exists(id)
+    alt already a favorite
         T->>R: remove(id)
-    else não é
+    else not a favorite
         T->>R: add(movie)
     end
-    DB-->>R: observeExists(id) emite novo valor
+    DB-->>R: observeExists(id) emits a new value
     R-->>VM: Flow<Boolean>
-    Note over VM: combine → novo UiState.Success
-    Note over DB: A lista também atualiza, via observeFavoriteIds()
+    Note over VM: combine → new UiState.Success
+    Note over DB: The list updates too, through observeFavoriteIds()
 ```
 
 ---
 
-## 10. Navegação, DI e módulo app
+## 10. Navigation, DI and the app module
 
-O `:app` é a **única peça que conhece todas as features**. Ele costura os callbacks de uma tela com a navegação para outra e monta o grafo Dagger.
+`:app` is the **only piece that knows every feature**. It stitches one screen's callbacks to the navigation to another and builds the Dagger graph.
 
-### 10.1 Navegação
+### 10.1 Navigation
 
 ```kotlin
 @Composable
 fun MoviesNavHost(
+    navController: NavHostController,
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController(),
 ) {
-    NavHost(navController = navController, startDestination = MoviesRoute, modifier = modifier) {
+    NavHost(
+        navController = navController,
+        startDestination = MoviesRoute,
+        modifier = modifier,
+    ) {
         moviesScreen(onMovieClick = navController::navigateToMovieDetail)
         favoritesScreen(onMovieClick = navController::navigateToMovieDetail)
         movieDetailScreen(onBack = navController::navigateUp)
+        settingsScreen()
     }
 }
 ```
 
-Cada feature expõe em `presentation/navigation/`: a rota `@Serializable`, `NavGraphBuilder.<tela>Screen(callbacks)` e `NavController.navigateTo<Tela>(...)`.
+Each feature exposes in `presentation/navigation/`: the `@Serializable` route, `NavGraphBuilder.<screen>Screen(callbacks)` and `NavController.navigateTo<Screen>(...)`.
 
-**Bottom bar (`MoviesApp`).** O `:app` tem um `Scaffold` com `NavigationBar` (Filmes / Favoritos), definida pelo enum `TopLevelDestination`. A barra só aparece nas abas e some com animação no detalhe. Trocar de aba usa `popUpTo(start) { saveState = true }` + `restoreState = true`, que preservam scroll e busca de cada aba. **Insets:** o `Scaffold` do app usa `contentWindowInsets = WindowInsets(0)`; as telas de aba aplicam só os insets de topo e laterais (a barra cuida do inferior); o detalhe usa os insets padrão.
+**Bottom bar (`MoviesApp`).** `:app` has a `Scaffold` with a `NavigationBar` (Movies / Favorites / Settings), defined by the `TopLevelDestination` enum. The bar only shows on the tabs and hides with an animation on the detail. Switching tabs uses `popUpTo(start) { saveState = true }` + `restoreState = true`, which preserve each tab's scroll and search. **Insets:** the app's `Scaffold` uses `contentWindowInsets = WindowInsets(0)`; tab screens apply only the top and horizontal insets (the bar handles the bottom); the detail uses the default insets.
 
-### 10.2 Grafo Dagger
+### 10.2 Dagger graph
 
 ```
 AppComponent (@Singleton)                         ← MoviesApplication (lazy)
@@ -1543,12 +1500,12 @@ AppComponent (@Singleton)                         ← MoviesApplication (lazy)
  ├─ DataStoreModule          DataStore<Preferences>
  ├─ DataModule               UserPreferencesRepository
  ├─ AnalyticsModule          Analytics, ErrorReporter, @AnalyticsDispatcher
- ├─ FirebaseModule           Set<AnalyticsTracker>/Set<ErrorTracker> do Firebase (vazio sem google-services.json)
- ├─ BuildTypeAnalyticsModule Logcat no debug, vazio no release
- ├─ AiFirebaseModule         AiJsonGenerator (Gemini ou UnavailableAiJsonGenerator)
+ ├─ FirebaseModule           Firebase Set<AnalyticsTracker>/Set<ErrorTracker> (empty without google-services.json)
+ ├─ BuildTypeAnalyticsModule Logcat in debug, empty in release
+ ├─ AiFirebaseModule         AiJsonGenerator (Gemini or UnavailableAiJsonGenerator)
  ├─ <Feature>DataModule      MoviesDataModule, MovieDetailDataModule, FavoritesDataModule
  └─ ViewModelBindingModule   ViewModelProvider.Factory = DaggerViewModelFactory
-      └─ ViewModelComponent (@Subcomponent, um por ViewModel, recebe SavedStateHandle)
+      └─ ViewModelComponent (@Subcomponent, one per ViewModel, receives SavedStateHandle)
            ├─ ViewModelMultibindsModule
            ├─ <Feature>PresentationModule  (@Binds @IntoMap @ViewModelKey)
            └─ AppViewModelModule           (MainActivityViewModel)
@@ -1586,82 +1543,82 @@ interface ViewModelComponent : ViewModelGraph {
 }
 ```
 
-O `MoviesApplication` cria o `AppComponent` sob demanda e instala o App Check (`AppCheckInstaller.install(this)`). O `MainActivity` (`AppCompatActivity`, por causa do idioma por app) entrega o `viewModelFactory` às telas via `LocalViewModelFactory` e o `Analytics` via `LocalAnalytics`; cada tela pega seu ViewModel com `daggerViewModel()`.
+`MoviesApplication` creates the `AppComponent` on demand and installs App Check (`AppCheckInstaller.install(this)`). `MainActivity` (an `AppCompatActivity`, because of the per-app language) hands the `viewModelFactory` to the screens through `LocalViewModelFactory` and `Analytics` through `LocalAnalytics`; each screen gets its ViewModel with `daggerViewModel()`.
 
 ### 10.3 `app/build.gradle.kts`
 
-Plugins: `movies.android.application`, `movies.android.compose`, `movies.dagger`, `kotlin.serialization`. Depende de `core:di`, `core:network`, `core:database`, `core:data`, `core:designsystem`, `core:ui` e, por feature, de `presentation` + `data`. O manifesto registra `android:name=".MoviesApplication"` e a permissão `INTERNET`.
+Plugins: `movies.android.application`, `movies.android.compose`, `movies.dagger`, `kotlin.serialization`, `movies.android.robolectric`. It depends on `core:di`, `core:network`, `core:database`, `core:datastore`, `core:data`, `core:analytics-firebase`, `core:ai-firebase`, `core:designsystem`, `core:ui` and, per feature, on `presentation` + `data`. The manifest registers `android:name=".MoviesApplication"` and the `INTERNET` permission.
 
 ---
 
-## 11. Tratamento de erros
+## 11. Error handling
 
 ```
-Retrofit/OkHttp lança exceção
+Retrofit/OkHttp throws an exception
         │
         ▼
 core:network ─ safeApiCall / toDomainError()       →  AppResult.Failure(DomainError)
-        │                                              (ou DomainException no Paging)
+        │                                              (or DomainException in Paging)
         ▼
-domain ─ trabalha só com AppResult / DomainError   (nunca vê HttpException)
+domain ─ works only with AppResult / DomainError   (never sees HttpException)
         │
         ▼
 presentation ─ UiState.Error(DomainError)          /  LoadState.Error → asDomainError()
         │
         ▼
-core:ui ─ DomainError.messageRes()                 →  string localizada + botão "Tentar novamente"
+core:ui ─ DomainError.messageRes()                 →  localized string + "Try again" button
 ```
 
-Regras:
-- `CancellationException` **sempre é relançada**.
-- Nenhuma tela mostra `e.message` cru ao usuário.
-- 401 (`Unauthorized`) indica token ausente ou inválido. A mensagem de debug deve orientar a conferir o `local.properties`.
+Rules:
+- `CancellationException` **is always rethrown**.
+- No screen shows a raw `e.message` to the user.
+- 401 (`Unauthorized`) means a missing or invalid token. The debug message should point to checking `local.properties`.
 
 ---
 
-## 12. Build: Gradle, build-logic e convention plugins
+## 12. Build: Gradle, build-logic and convention plugins
 
-Os arquivos de build são a fonte da verdade. Resumo do que cada um faz:
+The build files are the source of truth. Summary of what each one does:
 
-| Arquivo | Conteúdo |
+| File | Contents |
 |---|---|
-| `settings.gradle.kts` | `includeBuild("build-logic")`, repositórios, `TYPESAFE_PROJECT_ACCESSORS`, foojay (toolchains), `include` de `:app`, dos 14 módulos `core`, das 11 de feature e do `:architecture-test` |
-| `build.gradle.kts` (raiz) | Plugins de terceiros com `apply false` (AGP app/library, kotlin-jvm, compose, serialization, KSP, Room) |
-| `gradle.properties` | `-Xmx4g`, parallel, caching, configuration-cache, AndroidX |
+| `settings.gradle.kts` | `includeBuild("build-logic")`, repositories, `TYPESAFE_PROJECT_ACCESSORS`, foojay (toolchains), `include` of `:app`, the 14 `core` modules, the 11 feature modules and `:architecture-test` |
+| `build.gradle.kts` (root) | Third-party plugins with `apply false` (AGP app/library, kotlin-jvm, compose, serialization, KSP, Room, Roborazzi, Google Services, Crashlytics), Kover aggregation and the `moduleGraphAssert` rules |
+| `gradle.properties` | `-Xmx4g`, parallel, caching, configuration cache, AndroidX |
 | `gradle/wrapper/gradle-wrapper.properties` | Gradle 9.6.0 |
-| `gradle/libs.versions.toml` | Catálogo único (versões, libs, bundles `compose-ui`/`lifecycle-compose`/`unit-test`, plugins de terceiros e de convenção) |
-| `build-logic/settings.gradle.kts` | Reaproveita `../gradle/libs.versions.toml` como `libs` |
-| `build-logic/convention/build.gradle.kts` | `kotlin-dsl`, AGP/KGP/compose/KSP/Room como `compileOnly`, registro dos plugins |
+| `gradle/libs.versions.toml` | The single catalog (versions, libraries, `compose-ui`/`lifecycle-compose`/`unit-test` bundles, third-party and convention plugins) |
+| `build-logic/settings.gradle.kts` | Reuses `../gradle/libs.versions.toml` as `libs` |
+| `build-logic/convention/build.gradle.kts` | `kotlin-dsl`, AGP/KGP/compose/KSP/Room as `compileOnly`, plugin registration |
 
 ### 12.7 Convention plugins
 
-| Plugin | Aplica | Usado em |
+| Plugin | Applies | Used in |
 |---|---|---|
-| `movies.android.application` | AGP application, compile/min/targetSdk do catálogo, Java 17 | `:app` |
-| `movies.android.library` | AGP library, SDKs, Java 17, `coroutines-android`, deps de teste | todos os módulos Android |
-| `movies.android.compose` | Compose compiler, `buildFeatures.compose`, BOM, bundle `compose-ui`, tooling | `app`, `designsystem`, `ui`, `di`, `presentation` |
-| `movies.jvm.library` | Kotlin JVM, `java-library`, `javax.inject`, `coroutines-core` (**api**), bundle `unit-test` | `common`, `domain`, `testing`, `feature:*:domain` |
-| `movies.dagger` | KSP + `dagger` + `dagger-compiler` | todo módulo com `@Inject`/`@Module`/`@Component` |
-| `movies.android.room` | KSP + Room + `schemas/`, `room-runtime` como **api** | `core:database` |
+| `movies.android.application` | AGP application, compile/min/targetSdk from the catalog, Java 17 | `:app` |
+| `movies.android.library` | AGP library, SDKs, Java 17, `coroutines-android`, test dependencies | every Android module |
+| `movies.android.compose` | Compose compiler, `buildFeatures.compose`, BOM, `compose-ui` bundle, tooling | `app`, `designsystem`, `ui`, `di`, `presentation` |
+| `movies.jvm.library` | Kotlin JVM, `java-library`, `javax.inject`, `coroutines-core` (**api**), `unit-test` bundle | `common`, `domain`, `analytics`, `ai`, `testing`, `feature:*:domain`, `feature:*:api` |
+| `movies.dagger` | KSP + `dagger` + `dagger-compiler` | every module with `@Inject`/`@Module`/`@Component` |
+| `movies.android.room` | KSP + Room + `schemas/`, `room-runtime` as **api** | `core:database` |
 | `movies.android.feature.data` | library + dagger + serialization + `core:common`/`core:network` | `feature:*:data` |
 | `movies.android.feature.presentation` | library + compose + dagger + serialization + **robolectric** + `core:ui`/`designsystem`/`di` + lifecycle/navigation | `feature:*:presentation` |
-| `movies.android.robolectric` | Roborazzi + Robolectric + AndroidX Test + Compose UI Test em `src/test` | `presentation`, `core:ui`, `core:designsystem`, `core:data`, `:app` |
+| `movies.android.robolectric` | Roborazzi + Robolectric + AndroidX Test + Compose UI Test in `src/test`, plus the JDK 24+ `--add-opens` flags | `presentation`, `core:ui`, `core:designsystem`, `core:data`, `:app` |
 
-Todos os conventions base (`application`, `library`, `jvm.library`) também aplicam o **Kover** e registram a task **`unitTest`** (`test` na JVM, `testDebugUnitTest` no Android). O `application` configura o **Android Test Orchestrator** com `clearPackageData`. O build raiz agrega a cobertura (`koverHtmlReport`) e aplica o **module-graph-assert** (`assertModuleGraph`).
+Every base convention (`application`, `library`, `jvm.library`) also applies **Kover** and registers the **`unitTest`** task (`test` on the JVM, `testDebugUnitTest` on Android). `application` configures the **Android Test Orchestrator** with `clearPackageData`. The root build aggregates coverage (`koverHtmlReport`) and applies **module-graph-assert** (`assertModuleGraph`).
 
-Com o Kotlin embutido do AGP 9, o `jvmTarget` é configurado nas tasks `KotlinJvmCompile` (`KotlinConfig.kt`), já que `android.kotlinOptions` foi removido.
+With AGP 9's built-in Kotlin, `jvmTarget` is configured on the `KotlinJvmCompile` tasks (`KotlinConfig.kt`), since `android.kotlinOptions` was removed.
 
-### 12.8 Por que alguns `api(...)` com Dagger puro
+### 12.8 Why some `api(...)` with pure Dagger
 
-O `DaggerAppComponent` é gerado no `:app` e referencia os tipos de todos os módulos instalados. Por isso:
-- `core:network` expõe Retrofit/OkHttp/Json como `api`, e `core:database` expõe `room-runtime` como `api`;
-- **`feature:x:data` e `feature:x:presentation` declaram `api(projects.feature.x.domain)`**: o `AppComponent` precisa ver a interface do repositório, e o `ViewModelComponent` precisa ver os use cases do construtor do ViewModel.
+`DaggerAppComponent` is generated in `:app` and references the types of every installed module. Therefore:
+- `core:network` exposes Retrofit/OkHttp/Json as `api`, and `core:database` exposes `room-runtime` as `api`;
+- **`feature:x:data` and `feature:x:presentation` declare `api(projects.feature.x.domain)`**: `AppComponent` must see the repository interface, and `ViewModelComponent` must see the use cases in the ViewModel's constructor.
 
-Sem isso o KSP do `:app` falha com `ComponentProcessingStep was unable to process 'AppComponent' because '...MoviesRepository' could not be resolved` (ou "cannot access OkHttpClient"). É o custo de Dagger puro; o Hilt contorna com uma task de agregação própria.
+Without it, `:app`'s KSP fails with `ComponentProcessingStep was unable to process 'AppComponent' because '...MoviesRepository' could not be resolved` (or "cannot access OkHttpClient"). It is the cost of pure Dagger; Hilt works around it with its own aggregation task.
 
-### 12.9 Garantindo as regras no build (implementado)
+### 12.9 Enforcing the rules in the build (implemented)
 
-As regras da seção 5 são garantidas em boa parte pelo próprio grafo de módulos. Para travar o que sobra (ex.: alguém adicionar `implementation(projects.feature.moviedetail.domain)` dentro de `feature:movies`), adicione no CI um plugin de asserção de grafo de módulos, como o **module-graph-assert**, com regras do tipo:
+The rules in section 5 are largely enforced by the module graph itself. To lock down the rest (e.g. someone adding `implementation(projects.feature.moviedetail.domain)` inside `feature:movies`), the root `build.gradle.kts` applies **module-graph-assert** with rules like:
 
 ```
 ":feature:movies:.*" -X> ":feature:moviedetail:.*"
@@ -1671,153 +1628,156 @@ As regras da seção 5 são garantidas em boa parte pelo próprio grafo de módu
 ":core:(network|database|datastore)" -X> ":core:(domain|data)"
 ```
 
-Implementado no `build.gradle.kts` raiz (`moduleGraphAssert { restricted = ... }`), complementado pelos testes de Konsist em `architecture-test/` (seção 13), que pegam o que o Gradle não vê: imports e pacotes.
+The complete list is in `moduleGraphAssert { restricted = ... }` and in [docs/reference/architecture-rules.md](docs/reference/architecture-rules.md). It is complemented by the Konsist tests in `architecture-test/` (section 13), which catch what Gradle can't see: imports, packages, names and visibility.
 
 ---
 
-## 13. Testes
+## 13. Tests
 
-Estratégia em camadas, do mais rápido e numeroso ao mais lento e caro. **Fakes em vez de mocks** em todo lugar (como recomenda o Google): implementações reais e simples dos contratos, sem framework de mock.
+A layered strategy, from the fastest and most numerous to the slowest and most expensive. **Fakes instead of mocks** everywhere (as Google recommends): real, simple implementations of the contracts, no mocking framework.
 
-### 13.1 Pirâmide
+### 13.1 Pyramid
 
-| Nível | Onde roda | Ferramentas | O que cobre | Exemplos |
+| Level | Where it runs | Tools | What it covers | Examples |
 |---|---|---|---|---|
-| **Arquitetura** | JVM | Konsist, module-graph-assert | Regras do doc viram testes: camadas, pacotes, nomes, visibilidade, "todo use case/ViewModel tem teste" | `architecture-test/`, `assertModuleGraph` |
-| **Unitário** | JVM | JUnit4, coroutines-test, Turbine, fakes | Use cases, mappers, `AppResult`, parser SDUI, formatações | `GetMoviesUseCaseTest`, `SduiParserTest` |
-| **ViewModel** | JVM | Turbine, `MainDispatcherRule`, paging-testing (`asSnapshot`) | Sequência de estados, debounce, retry, favoritos reativos | `MoviesViewModelTest`, `MovieDetailViewModelTest` |
-| **Integração de rede** | JVM | MockWebServer + Retrofit/`TmdbJson` reais + **JSON real da TMDB** em `src/test/resources` | Paths/query params do Retrofit, `@SerialName`, paginação ponta a ponta, HTTP → `DomainError`, interceptors | `MoviesApiContractTest`, `MoviesRepositoryImplTest`, `MovieDetailRepositoryImplTest`, `TmdbInterceptorsTest` |
-| **Integração de banco** | JVM (Robolectric) | Room in-memory real | Repositório + DAO + mapeamento + Flows | `FavoritesRepositoryImplTest` |
-| **UI (Compose)** | JVM (Robolectric) | `createComposeRule` | Cada `*Content` stateless em todos os estados (dados, loading, erro, vazio) e callbacks | `MoviesContentTest`, `MovieDetailContentTest`, `SduiRendererTest` |
-| **Screenshot** | JVM (Robolectric, `GraphicsMode.NATIVE`) | Roborazzi | Regressão visual pixel a pixel, tema claro e escuro, `pt-BR` | `*ScreenshotTest` → `src/test/screenshots/*.png` |
-| **Grafo de DI** | JVM (Robolectric) | Dagger real | Todo ViewModel registrado no multibinding e instanciável; escopos `@Singleton` | `DependencyGraphTest` |
-| **Instrumentado** | Emulador/aparelho | AndroidX Test, Compose UI Test, Orchestrator | DAO no SQLite real; E2E do app (Dagger + Room + Navigation reais) | `FavoriteMovieDaoTest`, `MoviesAppNavigationTest` |
-| **Cobertura** | — | Kover | Relatório agregado de todos os módulos, sem código gerado/previews | `build/reports/kover/` |
+| **Architecture** | JVM | Konsist, module-graph-assert | The document's rules become tests: layers, packages, names, visibility, "every use case/ViewModel has a test" | `architecture-test/`, `assertModuleGraph` |
+| **Unit** | JVM | JUnit4, coroutines-test, Turbine, fakes | Use cases, mappers, `AppResult`, SDUI parser, formatting | `GetMoviesUseCaseTest`, `SduiParserTest` |
+| **ViewModel** | JVM | Turbine, `MainDispatcherRule`, paging-testing (`asSnapshot`) | State sequences, debounce, retry, reactive favorites | `MoviesViewModelTest`, `MovieDetailViewModelTest` |
+| **Network integration** | JVM | MockWebServer + real Retrofit/`TmdbJson` + **real TMDB JSON** in `src/test/resources` | Retrofit paths/query params, `@SerialName`, end-to-end pagination, HTTP → `DomainError`, interceptors | `MoviesRepositoryImplTest`, `MovieDetailRepositoryImplTest`, `TmdbInterceptorsTest` |
+| **Database integration** | JVM (Robolectric) | Real in-memory Room | Repository + data source + DAO + mapping + Flows | `FavoritesRepositoryImplTest` |
+| **UI (Compose)** | JVM (Robolectric) | `createComposeRule` | Each stateless `*Content` in every state (data, loading, error, empty) and callbacks | `MoviesContentTest`, `MovieDetailContentTest`, `SduiRendererTest` |
+| **Screenshot** | JVM (Robolectric, `GraphicsMode.NATIVE`) | Roborazzi | Pixel-by-pixel visual regression, light and dark themes, `pt-BR` | `*ScreenshotTest` → `src/test/screenshots/*.png` |
+| **DI graph** | JVM (Robolectric) | Real Dagger | Every ViewModel registered in the multibinding and instantiable; `@Singleton` scopes | `DependencyGraphTest` |
+| **Instrumented** | Emulator/device | AndroidX Test, Compose UI Test, Orchestrator | DAO on real SQLite; app E2E (real Dagger + Room + Navigation) | `FavoriteMovieDaoTest`, `MoviesAppNavigationTest` |
+| **Coverage** | — | Kover | Aggregated report across every module, excluding generated code and previews | `build/reports/kover/` |
 
-**Por que tanto na JVM?** Robolectric executa Compose, Room e recursos Android sem emulador, em segundos, e roda no CI a cada PR. Os instrumentados ficam para o que só o aparelho valida de verdade: SQLite real e o app inteiro rodando.
+**Why so much on the JVM?** Robolectric runs Compose, Room and Android resources without an emulator, in seconds, and runs in CI on every PR. Instrumented tests are kept for what only a device truly validates: real SQLite and the whole app running.
 
-### 13.2 Convenções
+### 13.2 Conventions
 
-- **Nome:** `<Classe>Test` no mesmo pacote. O Konsist exige teste para todo `UseCase` e todo `ViewModel`.
-- **Robolectric:** `@RunWith(AndroidJUnit4::class)` + `@Config(sdk = [36])`. Strings sempre via `context.getString(R.string.x)`, nunca texto fixo de recurso (o locale do Robolectric é `en`).
-- **Screenshot:** `@GraphicsMode(NATIVE)`, `qualifiers = "pt-rBR-w411dp-h891dp-xxhdpi"`, `MoviesTheme(darkTheme = ..., dynamicColor = false)` para ficar determinístico; arquivos em `src/test/screenshots/` (**versionados**).
-- **Paging na UI:** `flowOf(PagingData.from(lista)).collectAsLazyPagingItems()`; estados de loading/erro com `PagingData.empty(sourceLoadStates = ...)` (ver `MoviesTestData`).
-- **HTTP:** fixtures JSON reais (reduzidas) da TMDB; Retrofit montado com o mesmo `TmdbJson` da produção.
-- **Test tags** só onde não há texto/semântica natural (skeletons: `MovieGridDefaults.SKELETON_TEST_TAG`, `MOVIE_DETAIL_SKELETON_TEST_TAG`).
-- **ViewModel:** instanciado à mão com fakes; `SavedStateHandle(mapOf("movieId" to 603))` em vez de `toRoute()` (roda sem Robolectric).
+- **Name:** `<Class>Test` in the same package. Konsist requires a test for every `UseCase`, `UseCaseImpl` and `ViewModel`.
+- **Robolectric:** `@RunWith(AndroidJUnit4::class)` + `@Config(sdk = [36])`. Strings always through `context.getString(R.string.x)`, never hardcoded resource text (Robolectric's locale is `en`).
+- **Screenshot:** `@GraphicsMode(NATIVE)`, `qualifiers = "pt-rBR-w411dp-h891dp-xxhdpi"`, `MoviesTheme(darkTheme = ..., dynamicColor = false)` to be deterministic; files in `src/test/screenshots/` (**committed**).
+- **Paging in UI tests:** `flowOf(PagingData.from(list)).collectAsLazyPagingItems()`; loading/error states with `PagingData.empty(sourceLoadStates = ...)` (see `MoviesTestData`).
+- **Paging in ViewModel tests:** fakes return a `Pager` with a simple `PagingSource`; a static `PagingData.from` makes `asSnapshot` hang.
+- **HTTP:** real (trimmed) TMDB JSON fixtures; Retrofit built with the same `TmdbJson` as production.
+- **Test tags** only where there is no natural text/semantics (skeletons: `MovieGridDefaults.SKELETON_TEST_TAG`, `MOVIE_DETAIL_SKELETON_TEST_TAG`).
+- **ViewModel:** instantiated by hand with fakes; `SavedStateHandle(mapOf("movieId" to 603))` instead of `toRoute()` (runs without Robolectric).
 
-### 13.3 Comandos
+### 13.3 Commands
 
 ```bash
-./gradlew unitTest                       # TODOS os testes JVM (unit, integração, Compose, DI, Konsist)
+./gradlew unitTest                       # EVERY JVM test (unit, integration, Compose, DI, Konsist)
 ./gradlew :feature:movies:presentation:unitTest
-./gradlew assertModuleGraph              # regras do grafo de módulos
-./gradlew recordRoborazziDebug           # (re)grava as referências de screenshot -> commitar os PNGs
-./gradlew verifyRoborazziDebug           # falha se algum screenshot mudar
-./gradlew compareRoborazziDebug          # gera imagens de diff para revisar
-./gradlew koverHtmlReport                # cobertura agregada em build/reports/kover/html
-./scripts/verify.sh                      # atalho: docs + grafo + Konsist + unitTest + screenshots + lint (--quick: só grafo e Konsist)
+./gradlew assertModuleGraph              # module graph rules
+./gradlew recordRoborazziDebug           # (re)record the screenshot references -> commit the PNGs
+./gradlew verifyRoborazziDebug           # fails if a screenshot changes
+./gradlew compareRoborazziDebug          # generates diff images for review
+./gradlew koverHtmlReport                # aggregated coverage in build/reports/kover/html
+./scripts/verify.sh                      # shortcut: docs + graph + Konsist + unitTest + screenshots + lint (--quick: graph and Konsist only)
 ./scripts/verify-module.sh :feature:movies:presentation
-./gradlew connectedDebugAndroidTest      # instrumentados (emulador/aparelho conectado)
+./gradlew connectedDebugAndroidTest      # instrumented (emulator/connected device)
 ```
 
-### 13.4 CI (`.github/workflows/ci.yml`)
+### 13.4 CI (`.github/workflows/ci.yml`, "Android CI")
 
-1. **checks** (JVM): `scripts/check-docs.py` (links e skills) → `assertModuleGraph` → Konsist → `unitTest` → `verifyRoborazziDebug` (quando houver referências commitadas) → `lintDebug` → Kover. Sobe relatórios como artifact.
-2. **instrumented**: emulador API 35 com KVM (`reactivecircus/android-emulator-runner`) → `connectedDebugAndroidTest`.
+1. **checks** (JVM): `scripts/check-docs.py` (links and skills) → `assertModuleGraph` → Konsist → `unitTest` → `verifyRoborazziDebug` (when there are committed references) → `lintDebug` → Kover. Uploads the reports as artifacts.
+2. **instrumented**: API 35 emulator with KVM (`reactivecircus/android-emulator-runner`) → `connectedDebugAndroidTest`.
 
-O token vem do secret `TMDB_ACCESS_TOKEN` do repositório. Nenhum teste depende da rede real: os de rede usam MockWebServer, e o E2E não verifica conteúdo vindo da TMDB.
+It runs on pushes to `master` and on every pull request. The token comes from the repository's `TMDB_ACCESS_TOKEN` secret. No test depends on the real network: network tests use MockWebServer, and the E2E test doesn't check content coming from TMDB.
 
-### 13.5 Próximos passos possíveis
+### 13.5 Possible next steps
 
-- **Gradle Managed Devices** (emulador declarado no Gradle) no lugar do action de emulador.
-- **Macrobenchmark + Baseline Profiles** (rolagem da grade, startup).
-- **E2E hermético:** um `TestAppComponent` com repositórios fake para testar fluxos completos sem rede.
+- **Gradle Managed Devices** (emulator declared in Gradle) instead of the emulator action.
+- **Macrobenchmark + Baseline Profiles** (grid scrolling, startup).
+- **Hermetic E2E:** a `TestAppComponent` with fake repositories to test complete flows without the network.
 
 ---
 
-## 14. Convenções de código
+## 14. Code conventions
 
-### Nomenclatura
+### Naming
 
-| Elemento | Padrão | Exemplo |
+| Element | Pattern | Example |
 |---|---|---|
-| Rota de navegação | `<Tela>Route` (`@Serializable`) | `MovieDetailRoute(movieId)` |
-| Composable stateful (com ViewModel) | `<Tela>Screen` | `MovieDetailScreen` |
-| Composable stateless | `<Tela>Content` | `MovieDetailContent` |
-| Estado de tela | `<Tela>UiState` (sealed interface) | `MovieDetailUiState` |
-| Modelo de UI | `<Nome>Ui` | `MovieItemUi` |
-| Use case | Verbo + substantivo + `UseCase` | `GetMovieDetailUseCase` |
-| Repositório (contrato) | `<Nome>Repository` | `MoviesRepository` |
-| Repositório (impl) | `<Nome>RepositoryImpl`, `internal` | `MoviesRepositoryImpl` |
-| DTO | `<Nome>Dto`, `internal` | `MovieDto` |
-| Entity Room | `<Nome>Entity` | `FavoriteMovieEntity` |
-| Extensão de navegação | `NavGraphBuilder.<tela>Screen()` / `NavController.navigateTo<Tela>()` | `movieDetailScreen()` |
+| Navigation route | `<Screen>Route` (`@Serializable`) | `MovieDetailRoute(movieId)` |
+| Stateful composable (with a ViewModel) | `<Screen>Screen` | `MovieDetailScreen` |
+| Stateless composable | `<Screen>Content` | `MovieDetailContent` |
+| Screen state | `<Screen>UiState` (sealed interface) | `MovieDetailUiState` |
+| UI model | `<Name>Ui` | `MovieCardUi` |
+| Use case | Verb + noun + `UseCase` | `GetMovieDetailUseCase` |
+| Repository (contract) | `<Name>Repository` | `MoviesRepository` |
+| Repository (implementation) | `<Name>RepositoryImpl`, `internal` | `MoviesRepositoryImpl` |
+| Data source | `<Type>LocalDataSource` / `<Type>RemoteDataSource`, `internal` | `MoviesRemoteDataSource` |
+| DTO | `<Name>Dto`, `internal` | `MovieDto` |
+| Room entity | `<Name>Entity` | `FavoriteMovieEntity` |
+| Navigation extension | `NavGraphBuilder.<screen>Screen()` / `NavController.navigateTo<Screen>()` | `movieDetailScreen()` |
 
-### Regras
+### Rules
 
-- **Visibilidade:** o padrão é `internal`. Fica `public` apenas o contrato de um módulo: modelos e use cases do domain, rotas e extensões de navegação do presentation.
-- **Imutabilidade:** `UiState` e modelos são `data class` com `val` e `List` (não `MutableList`).
-- **Use cases:** uma responsabilidade, `operator fun invoke`, sem estado.
-- **ViewModel:** expõe `StateFlow` (ou `Flow<PagingData>`), recebe eventos por funções `onXxx()`, nunca expõe `MutableStateFlow`.
-- **Compose:** `*Content` recebe estado + lambdas, sem ViewModel, e tem `@Preview` para Loading, Success e Error.
-- **Strings:** todo texto que o usuário vê vem de `strings.xml` (`values/` pt-BR, `values-en/` inglês), inclusive `contentDescription`, unidades (`2h 16min`) e o conteúdo do backend SDUI simulado (`MovieDetailLayoutStrings`). O Konsist (`UiStringRulesTest`) falha se um `@Composable` usar texto literal. Exceções: `@Preview` e dados de teste (títulos, sinopses de exemplo).
-- **Idioma do código:** inglês em tudo que não é texto de produto: identificadores, nomes de teste, mensagens de exceção e de build, nomes de jobs do CI. Testes JVM usam nomes com crases em inglês (`` `blank query returns popular movies` ``); testes instrumentados usam camelCase (`navigatesToFavoritesShowsEmptyStateAndBack`), porque o DEX com minSdk < 30 não aceita espaços em nomes de método.
-- **Coroutines:** nunca capturar `CancellationException` sem relançar.
-- **Comentários:** o código não leva comentários explicativos. Nomes de classes, funções e testes devem bastar; o *porquê* das decisões fica em `docs/decisions/`, neste documento e no `feature/README.md`.
+- **Visibility:** `internal` is the default. Only a module's contract is `public`: domain models and use cases, presentation routes and navigation extensions.
+- **Immutability:** `UiState` and models are `data class` with `val` and `List` (not `MutableList`).
+- **Use cases:** one responsibility, `operator fun invoke`, stateless.
+- **ViewModel:** exposes `StateFlow` (or `Flow<PagingData>`), receives events through `onXxx()` functions, never exposes `MutableStateFlow`.
+- **Compose:** `*Content` receives state + lambdas, no ViewModel, and has a `@Preview` for Loading, Success and Error.
+- **Strings:** every user-visible text comes from `strings.xml` (`values/` pt-BR, `values-en/` English), including `contentDescription`, units (`2h 16min`) and the simulated SDUI backend's content (`MovieDetailLayoutStrings`). Konsist (`UiStringRulesTest`) fails if a `@Composable` uses literal text. Exceptions: `@Preview` and test data (sample titles, synopses).
+- **Language:** English for everything that isn't product text: identifiers, test names, exception and build messages, CI job names and documentation. JVM tests use English names in backticks (`` `blank query returns popular movies` ``); instrumented tests use camelCase (`navigatesToFavoritesShowsEmptyStateAndBack`), because DEX with minSdk < 30 doesn't accept spaces in method names.
+- **Coroutines:** never catch `CancellationException` without rethrowing it.
+- **Comments:** the code has no explanatory comments. Class, function and test names must be enough; the *why* of decisions lives in `docs/decisions/`, in this document and in `feature/README.md`.
 
 ---
 
-## 15. Passo a passo e estado do projeto
+## 15. Roadmap and project status
 
-- [x] **1. Projeto base** (Android Studio, `com.faas.myfavoritefilms`, minSdk 26).
-- [x] **2. Gradle.** Wrapper 9.6.0, catálogo unificado, `gradle.properties`.
-- [x] **3. Token** (`local.properties` local; secret `TMDB_ACCESS_TOKEN` no GitHub para o CI). Adicione `TMDB_ACCESS_TOKEN=...` no `local.properties`. Teste antes com:
+- [x] **1. Base project** (Android Studio, `com.faas.myfavoritefilms`, minSdk 26).
+- [x] **2. Gradle.** Wrapper 9.6.0, unified catalog, `gradle.properties`.
+- [x] **3. Token** (local `local.properties`; `TMDB_ACCESS_TOKEN` secret on GitHub for CI). Add `TMDB_ACCESS_TOKEN=...` to `local.properties`. Test it first with:
   ```bash
   curl -H "Authorization: Bearer $TOKEN" "https://api.themoviedb.org/3/movie/popular?language=pt-BR"
   ```
-- [x] **4. build-logic** com os convention plugins.
-- [x] **5. `:app` convertido** para os convention plugins.
-- [x] **6. Módulos core:** `common`, `domain`, `network`, `database`, `data`, `designsystem`, `ui`, `di`, `testing`.
-- [x] **7. Shell do app:** `MoviesApplication` + `AppComponent`, `ViewModelComponent`, `MainActivity`, `MoviesNavHost`.
-- [x] **8a. Feature `movies`: lista de populares paginada** + favoritar.
-- [x] **8b. Busca por título** na mesma tela (debounce, lupa com loading).
-- [x] **9. Feature `moviedetail`** com seção server-driven (7.10).
-- [x] **10. Favoritos de ponta a ponta** + tela de favoritos (`feature:favorites`) e bottom bar.
-- [x] **11. Qualidade:** asserção do grafo de módulos, Konsist, testes de todas as camadas, screenshots, Kover e CI no GitHub Actions (seção 13).
-- [x] **12a. Tracking:** Firebase Analytics + Crashlytics via multibinding (seção 7.11).
-- [x] **12b. Preferências** de tema e idioma com DataStore + aba Ajustes (seção 7.12).
-- [x] **12d. Busca com IA** em linguagem natural (Gemini + `discover/movie`; seção 7.13).
-- [x] **12c. Elenco e trailers** no detalhe via SDUI (`person_carousel`, `video_carousel`; seção 7.10).
-- [x] **13. Documentação para agentes de IA** em padrões abertos: `AGENTS.md`, `.agents/skills/`, `docs/` (Diátaxis + MADR), `scripts/` e hook de segredos ([docs/explanation/ai-agents.md](docs/explanation/ai-agents.md)).
-- [ ] **12. Atribuição TMDB** na tela "Sobre" (6.4).
+- [x] **4. build-logic** with the convention plugins.
+- [x] **5. `:app` converted** to the convention plugins.
+- [x] **6. Core modules:** `common`, `domain`, `network`, `database`, `data`, `designsystem`, `ui`, `di`, `testing`.
+- [x] **7. App shell:** `MoviesApplication` + `AppComponent`, `ViewModelComponent`, `MainActivity`, `MoviesNavHost`.
+- [x] **8a. `movies` feature: paged popular list** + favorite toggle.
+- [x] **8b. Title search** on the same screen (debounce, magnifier with loading).
+- [x] **9. `moviedetail` feature** with a server-driven section (7.10).
+- [x] **10. Favorites end to end** + favorites screen (`feature:favorites`) and bottom bar.
+- [x] **11. Quality:** module graph assertion, Konsist, tests in every layer, screenshots, Kover and CI on GitHub Actions (section 13).
+- [x] **12a. Tracking:** Firebase Analytics + Crashlytics through multibinding (section 7.11).
+- [x] **12b. Preferences** for theme and language with DataStore + Settings tab (section 7.12).
+- [x] **12c. Cast and trailers** on the detail through SDUI (`person_carousel`, `video_carousel`; section 7.10).
+- [x] **12d. Natural-language AI search** (Gemini + `discover/movie`; section 7.13).
+- [x] **13. Documentation for AI agents** in open standards: `AGENTS.md`, `.agents/skills/`, `docs/` (Diátaxis + MADR), `scripts/` and secret-blocking hook ([docs/explanation/ai-agents.md](docs/explanation/ai-agents.md)).
+- [x] **14. English documentation** and project README.
+- [ ] **15. TMDB attribution** on an "About" screen (6.4).
 
-**Para adicionar uma feature:** siga o checklist de `feature/README.md` (módulos, `include`, módulo Dagger de data no `AppComponent`, módulo de ViewModel no `ViewModelComponent`, rota no `MoviesNavHost`).
+**To add a feature:** follow the checklist in `feature/README.md` (modules, `include`, data Dagger module in `AppComponent`, ViewModel module in `ViewModelComponent`, route in `MoviesNavHost`).
 
 ---
 
-## 16. Evoluções futuras
+## 16. Future evolutions
 
-| Evolução | Como encaixa sem quebrar a arquitetura |
+| Evolution | How it fits without breaking the architecture |
 |---|---|
-| Cache offline da lista | `RemoteMediator` no `feature:movies:data` + entity e DAO em `core:database`. O contrato `MoviesRepository` não muda |
-| Login TMDB e favoritos na conta | Nova feature `auth`, sessão no `core:datastore` (que já existe). `FavoritesRepository` ganha outra implementação, sem mudar o domain |
-| Navigation 3 | Muda só a seção 10 e os arquivos `navigation/` das features. Domain e data não são afetados |
-| Configuração de imagens dinâmica | Buscar o endpoint `configuration` no início e alimentar `TmdbImages` |
-| Backend real de SDUI | Endpoint próprio devolvendo o payload da seção 7.10; substitui o `MovieDetailLayoutService` |
-| Shared element (pôster da grade → detalhe) | `SharedTransitionLayout` no `:app` + `Modifier.sharedElement` no `MovieCard` e no cabeçalho do detalhe, passando os escopos por CompositionLocal |
-| Baseline Profiles | Módulo `:baselineprofile` com benchmark da rolagem da lista |
+| Offline cache for the list | `RemoteMediator` in `feature:movies:data` + entity and DAO in `core:database` behind a `MoviesLocalDataSource`. The `MoviesRepository` contract doesn't change |
+| TMDB login and account favorites | A new `auth` feature, session in `core:datastore` (which already exists). `FavoritesRepository` gets another implementation, without changing the domain |
+| Navigation 3 | Changes only section 10 and the features' `navigation/` files. Domain and data are not affected |
+| Dynamic image configuration | Fetch the `configuration` endpoint at startup and feed `TmdbImages` |
+| Real SDUI backend | An own endpoint returning the payload from section 7.10; replaces `MovieDetailLayoutService` |
+| Shared element (grid poster → detail) | `SharedTransitionLayout` in `:app` + `Modifier.sharedElement` on `MovieCard` and on the detail header, passing the scopes through a CompositionLocal |
+| Baseline Profiles | A `:baselineprofile` module with a list-scrolling benchmark |
 
 ---
 
-### Referências
+### References
 
-- Guia de arquitetura de apps Android: https://developer.android.com/topic/architecture
-- Guia de modularização: https://developer.android.com/topic/modularization
-- Now in Android (app de referência): https://github.com/android/nowinandroid
-- Navigation type-safe: https://developer.android.com/guide/navigation/design/type-safety
+- Guide to Android app architecture: https://developer.android.com/topic/architecture
+- Guide to Android app modularization: https://developer.android.com/topic/modularization
+- Now in Android (reference app): https://github.com/android/nowinandroid
+- Type-safe navigation: https://developer.android.com/guide/navigation/design/type-safety
 - Paging 3: https://developer.android.com/topic/libraries/architecture/paging/v3-overview
-- Migração para o Kotlin embutido no AGP 9: https://developer.android.com/build/migrate-to-built-in-kotlin
-- TMDB, primeiros passos: https://developer.themoviedb.org/docs/getting-started
-- TMDB, autenticação: https://developer.themoviedb.org/docs/authentication-application
-- TMDB, imagens: https://developer.themoviedb.org/docs/image-basics
+- Migrating to built-in Kotlin in AGP 9: https://developer.android.com/build/migrate-to-built-in-kotlin
+- TMDB, getting started: https://developer.themoviedb.org/docs/getting-started
+- TMDB, authentication: https://developer.themoviedb.org/docs/authentication-application
+- TMDB, images: https://developer.themoviedb.org/docs/image-basics

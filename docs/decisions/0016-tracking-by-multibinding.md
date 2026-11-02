@@ -1,31 +1,31 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0016 — Tracking por multibinding
+# 0016 — Tracking through multibinding
 
-## Contexto e problema
+## Context and problem statement
 
-Queremos somar ou trocar ferramentas de analytics sem tocar nas features e sem `if (DEBUG)`.
+We want to add or replace analytics tools without touching features and without `if (DEBUG)`.
 
-## Opções consideradas
+## Considered options
 
-* `Analytics`/`ErrorReporter` (JVM) com destinos em `Set<Tracker>` via `@IntoSet`/`@ElementsIntoSet`
-* SDK do Firebase direto nas features
+* `Analytics`/`ErrorReporter` (JVM) with destinations in a `Set<Tracker>` through `@IntoSet`/`@ElementsIntoSet`
+* The Firebase SDK called directly from features
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Contratos em `core:analytics` e destinos registrados por multibinding, despachados numa fila serializada, porque Open/Closed: destino novo é um binding novo; features dependem só da abstração.
+Chosen option: Contracts in `core:analytics` and destinations registered through multibinding, dispatched on a serialized queue, because Open/Closed: a new destination is a new binding; features depend only on the abstraction.
 
-### Consequências
+### Consequences
 
-* Bom: Logcat só no debug via source set
-* Bom: `TestAnalytics` nos testes
-* Bom: Destino lento não trava a main thread
-* Ruim: Mais indireção que chamar o SDK
+* Good: Logcat only in debug through a source set
+* Good: `TestAnalytics` in tests
+* Good: A slow destination never blocks the main thread
+* Bad: More indirection than calling the SDK
 
-### Confirmação
+### Confirmation
 
 Konsist: `only analytics-firebase and ai-firebase know the Firebase SDK`; `CompositeAnalyticsTest`.

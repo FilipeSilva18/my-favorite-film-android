@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0015 — Componentes de lista compartilhados em core:ui
+# 0015 — Shared list components in core:ui
 
-## Contexto e problema
+## Context and problem statement
 
-Lista principal e favoritos exibem o mesmo card e a mesma grade.
+The main list and favorites show the same card and the same grid.
 
-## Opções consideradas
+## Considered options
 
-* `MovieCardUi`, `MovieCard`, `MovieGrid` e skeletons em `core:ui/movie`
-* Card por feature
+* `MovieCardUi`, `MovieCard`, `MovieGrid` and skeletons in `core:ui/movie`
+* A card per feature
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Componentes em `core:ui/movie`, porque pela ADR-0005, o que duas features usam sobe para o core.
+Chosen option: Components in `core:ui/movie`, because per ADR-0005, what two features use moves to the core.
 
-### Consequências
+### Consequences
 
-* Bom: Visual consistente e screenshots únicos
-* Ruim: Mudança no card afeta duas telas (coberto por screenshots)
+* Good: Consistent visuals and shared screenshots
+* Bad: A card change affects two screens (covered by screenshots)
 
-### Confirmação
+### Confirmation
 
-Screenshots de `MovieGrid` e das telas que o usam.
+Screenshots of `MovieGrid` and of the screens that use it.

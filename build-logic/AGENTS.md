@@ -1,26 +1,26 @@
 # build-logic/ — convention plugins
 
-Complementa o [AGENTS.md da raiz](../AGENTS.md).
+Complements the [root AGENTS.md](../AGENTS.md).
 
-Os módulos não repetem configuração: cada `build.gradle.kts` aplica plugins `movies.*` e declara só as dependências próprias. Versões ficam em `gradle/libs.versions.toml`, compartilhado com este build incluído.
+Modules don't repeat configuration: each `build.gradle.kts` applies `movies.*` plugins and declares only its own dependencies. Versions live in `gradle/libs.versions.toml`, shared with this included build.
 
-| Plugin | Classe | Usado em |
+| Plugin | Class | Used in |
 |---|---|---|
-| `movies.android.application` | `AndroidApplicationConventionPlugin` | `:app` (SDKs, Orchestrator, Kover, task `unitTest`) |
-| `movies.android.library` | `AndroidLibraryConventionPlugin` | Todo módulo Android |
-| `movies.android.compose` | `AndroidComposeConventionPlugin` | Módulos com Compose |
-| `movies.jvm.library` | `JvmLibraryConventionPlugin` | Módulos JVM (`domain`, `api`, `common`, `analytics`, `ai`, `testing`) |
-| `movies.dagger` | `DaggerConventionPlugin` | Módulos com `@Inject`, `@Module` ou `@Component` |
+| `movies.android.application` | `AndroidApplicationConventionPlugin` | `:app` (SDKs, Orchestrator, Kover, `unitTest` task) |
+| `movies.android.library` | `AndroidLibraryConventionPlugin` | Every Android module |
+| `movies.android.compose` | `AndroidComposeConventionPlugin` | Modules with Compose |
+| `movies.jvm.library` | `JvmLibraryConventionPlugin` | JVM modules (`domain`, `api`, `common`, `analytics`, `ai`, `testing`) |
+| `movies.dagger` | `DaggerConventionPlugin` | Modules with `@Inject`, `@Module` or `@Component` |
 | `movies.android.room` | `AndroidRoomConventionPlugin` | `core:database` |
 | `movies.android.feature.data` | `AndroidFeatureDataConventionPlugin` | `feature:*:data` |
 | `movies.android.feature.presentation` | `AndroidFeaturePresentationConventionPlugin` | `feature:*:presentation` |
-| `movies.android.robolectric` | `AndroidRobolectricConventionPlugin` | Módulos com Robolectric, Compose UI Test e Roborazzi |
+| `movies.android.robolectric` | `AndroidRobolectricConventionPlugin` | Modules with Robolectric, Compose UI Test and Roborazzi |
 
-## Regras
+## Rules
 
-- Configuração repetida em dois ou mais módulos vira convention plugin; não copie blocos entre `build.gradle.kts`.
-- Plugin novo: classe em `convention/src/main/kotlin`, registro em `convention/build.gradle.kts`, alias em `[plugins]` do catálogo.
-- AGP 9 usa o Kotlin embutido: não aplique `kotlin-android`. O `jvmTarget` é configurado nas tasks `KotlinJvmCompile` (`KotlinConfig.kt`).
-- Os testes Robolectric precisam dos `--add-opens` e `--enable-native-access` do `AndroidRobolectricConventionPlugin` no JDK 24+. Não remova.
-- Todo plugin base registra a task agregadora `unitTest`; o CI depende dela.
-- Mudança aqui afeta todos os módulos: rode `./scripts/verify.sh` completo.
+- Configuration repeated in two or more modules becomes a convention plugin; don't copy blocks between `build.gradle.kts` files.
+- New plugin: class in `convention/src/main/kotlin`, registration in `convention/build.gradle.kts`, alias under `[plugins]` in the catalog.
+- AGP 9 uses built-in Kotlin: don't apply `kotlin-android`. `jvmTarget` is configured on the `KotlinJvmCompile` tasks (`KotlinConfig.kt`).
+- Robolectric tests need the `--add-opens` and `--enable-native-access` flags from `AndroidRobolectricConventionPlugin` on JDK 24+. Don't remove them.
+- Every base plugin registers the aggregating `unitTest` task; CI depends on it.
+- A change here affects every module: run the full `./scripts/verify.sh`.

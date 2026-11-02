@@ -1,30 +1,30 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0008 — Navigation Compose com rotas type-safe
+# 0008 — Navigation Compose with type-safe routes
 
-## Contexto e problema
+## Context and problem statement
 
-As features precisam ser navegáveis sem conhecer umas às outras.
+Features must be navigable without knowing each other.
 
-## Opções consideradas
+## Considered options
 
-* Navigation Compose com rotas `@Serializable`; só o `:app` conhece todas
+* Navigation Compose with `@Serializable` routes; only `:app` knows all of them
 * Navigation 3
-* Rotas em string
+* String routes
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Navigation Compose type-safe; cada feature expõe extensões de `NavGraphBuilder` e `NavController`, porque recomendação atual do Google e argumentos verificados em compilação.
+Chosen option: Type-safe Navigation Compose; each feature exposes `NavGraphBuilder` and `NavController` extensions, because it is Google's current recommendation and arguments are checked at compile time.
 
-### Consequências
+### Consequences
 
-* Bom: Features desacopladas: o `:app` liga os callbacks
-* Ruim: Migração futura para Navigation 3 toca os pacotes `navigation/`
+* Good: Decoupled features: `:app` wires the callbacks
+* Bad: A future migration to Navigation 3 touches the `navigation/` packages
 
-### Confirmação
+### Confirmation
 
-`MoviesNavHost` no `:app`; rotas em `presentation/navigation/`.
+`MoviesNavHost` in `:app`; routes in `presentation/navigation/`.

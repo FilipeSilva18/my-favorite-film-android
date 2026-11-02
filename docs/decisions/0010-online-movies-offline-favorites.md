@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0010 — Filmes online e favoritos offline
+# 0010 — Online movies and offline favorites
 
-## Contexto e problema
+## Context and problem statement
 
-O escopo da v1 não exige cache de catálogo, mas favoritos precisam sobreviver sem rede.
+The v1 scope doesn't need a catalog cache, but favorites must survive without a network.
 
-## Opções consideradas
+## Considered options
 
-* Filmes online, favoritos em Room
-* Offline-first completo desde o início
+* Online movies, favorites in Room
+* Full offline-first from the start
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Filmes direto da TMDB, sem cache; favoritos persistidos em Room, porque entrega o essencial sem a complexidade de sincronização.
+Chosen option: Movies straight from TMDB without a cache; favorites persisted in Room, because it delivers the essentials without the complexity of synchronization.
 
-### Consequências
+### Consequences
 
-* Bom: Menos código na v1
-* Ruim: Sem rede, a lista não carrega
+* Good: Less code in v1
+* Bad: Without a network, the list doesn't load
 
-### Confirmação
+### Confirmation
 
-O cache futuro entra com `RemoteMediator` sem mudar `MoviesRepository` (ARCHITECTURE.md seção 16).
+A future cache plugs in with `RemoteMediator` without changing `MoviesRepository` (ARCHITECTURE.md section 16).

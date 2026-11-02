@@ -1,75 +1,75 @@
-# IA de agentes no repositório
+# AI agents in this repository
 
-Como o projeto se prepara para ser desenvolvido com agentes de IA de qualquer fornecedor, e o que pode evoluir.
+How the project is prepared to be developed with AI agents from any vendor, and where it can evolve.
 
-## Princípio
+## Principle
 
-Um agente erra menos quando três coisas existem no repositório:
+An agent makes fewer mistakes when three things exist in the repository:
 
-1. **Contexto curto e sempre carregado:** o que é o projeto, como rodar, o que nunca fazer. → `AGENTS.md`.
-2. **Procedimentos sob demanda:** como fazer cada tarefa recorrente do jeito do projeto. → Skills em `.agents/skills/`.
-3. **Verificação automática:** o agente descobre sozinho se quebrou uma regra, sem depender de revisão humana. → `assertModuleGraph`, Konsist, testes, `scripts/verify.sh`.
+1. **Short, always-loaded context:** what the project is, how to run it, what never to do. → `AGENTS.md`.
+2. **On-demand procedures:** how to do each recurring task the project's way. → Skills in `.agents/skills/`.
+3. **Automatic verification:** the agent finds out on its own when it breaks a rule, without relying on human review. → `assertModuleGraph`, Konsist, tests, `scripts/verify.sh`.
 
-O terceiro item é o mais importante. Documentação que não é verificada envelhece; regra que vira teste guia o agente pelo erro de compilação ou pelo teste vermelho.
+The third item matters most. Unverified documentation goes stale; a rule that becomes a test guides the agent through a compilation error or a red test.
 
-## O que já existe
+## What already exists
 
-| Camada | Artefato | Padrão aberto |
+| Layer | Artifact | Open standard |
 |---|---|---|
-| Contexto | `AGENTS.md` na raiz + em `app/`, `core/`, `feature/`, `build-logic/`, `architecture-test/` | [AGENTS.md](https://agents.md) (Agentic AI Foundation / Linux Foundation) |
-| Procedimentos | 7 skills: `feature-builder`, `data-integrator`, `compose-ui`, `sdui-designer`, `test-engineer`, `architecture-guardian`, `docs-keeper` | [Agent Skills](https://agentskills.io) |
-| Conhecimento | `docs/` (Diátaxis), ADRs em MADR, `ARCHITECTURE.md` | [MADR](https://adr.github.io/madr/), [Diátaxis](https://diataxis.fr) |
-| Guardrails | module-graph-assert, 21 regras Konsist, cobertura obrigatória de use case e ViewModel, regra de strings | — |
-| Segurança | `scripts/git-hooks/pre-commit` bloqueia `local.properties`, `google-services.json` e tokens no diff | — |
+| Context | `AGENTS.md` at the root and in `app/`, `core/`, `feature/`, `build-logic/`, `architecture-test/` | [AGENTS.md](https://agents.md) (Agentic AI Foundation / Linux Foundation) |
+| Procedures | 7 skills: `feature-builder`, `data-integrator`, `compose-ui`, `sdui-designer`, `test-engineer`, `architecture-guardian`, `docs-keeper` | [Agent Skills](https://agentskills.io) |
+| Knowledge | `README.md`, `docs/` (Diátaxis), MADR ADRs, `ARCHITECTURE.md` | [MADR](https://adr.github.io/madr/), [Diátaxis](https://diataxis.fr) |
+| Guardrails | module-graph-assert, 21 Konsist rules, mandatory use case and ViewModel tests, string rule | — |
+| Security | `scripts/git-hooks/pre-commit` blocks `local.properties`, `google-services.json` and tokens in the diff | — |
 | Feedback | `scripts/verify.sh`, `scripts/verify-module.sh`, `scripts/check-docs.py` | — |
-| Fluxo de PR | Template de PR com a definição de pronto; template de issue com especificação de feature | — |
+| PR flow | PR template with the definition of done; issue template with a feature specification | — |
 
-**Por que esses padrões:** `AGENTS.md` é lido pelo Gemini do Android Studio, Codex, Copilot, Cursor, Gemini CLI, Junie e dezenas de outras ferramentas. `.agents/skills/` é o diretório que o Android Studio (a partir do Quail) e o Codex procuram, e o próprio Google publica skills oficiais de Android nesse formato. Nenhum arquivo é específico de um fornecedor.
+**Why these standards:** `AGENTS.md` is read by Gemini in Android Studio, Codex, Copilot, Cursor, Gemini CLI, Junie and dozens of other tools. `.agents/skills/` is the directory Android Studio (from Quail on) and Codex look in, and Google publishes official Android skills in this format. No file is vendor-specific.
 
-## Papéis de agente como skills
+## Agent roles as skills
 
-Não existe padrão aberto para "subagentes": cada ferramenta tem o seu formato. Por isso os papéis são skills, que qualquer ferramenta compatível carrega quando a descrição bate com a tarefa, e que uma pessoa pode colar como prompt numa ferramenta sem suporte.
+There is no open standard for "subagents": each tool has its own format. That is why the roles are skills, which any compatible tool loads when the description matches the task, and which a person can paste as a prompt into a tool without support.
 
-| Skill | Responsabilidade | Fronteira |
+| Skill | Responsibility | Boundary |
 |---|---|---|
-| `feature-builder` | Feature nova de ponta a ponta (módulos, DI, navegação, testes) | Orquestra; delega detalhes às outras skills |
-| `data-integrator` | Endpoint da TMDB, DTO, data source, repositório, teste de contrato | Só camada `data` e contrato no `domain` |
-| `compose-ui` | Telas e componentes Compose, estados, strings, previews, screenshots | Só `presentation`, `core:ui`, `core:designsystem` |
-| `sdui-designer` | Bloco novo do vocabulário Server-Driven UI | `core:common/sdui`, `core:network/sdui`, `core:ui/sdui` |
-| `test-engineer` | Testes em todas as camadas, fakes, cobertura exigida | Não muda código de produção sem pedir |
-| `architecture-guardian` | Revisão de mudanças contra ADRs e regras; evolução das regras | Lê e aponta; muda regra só com ADR |
-| `docs-keeper` | Mantém `AGENTS.md`, `docs/`, ADRs e `ARCHITECTURE.md` coerentes com o código | Só documentação |
+| `feature-builder` | New feature end to end (modules, DI, navigation, tests) | Orchestrates; delegates details to the other skills |
+| `data-integrator` | TMDB endpoint, DTO, data source, repository, contract test | Only the `data` layer and the contract in `domain` |
+| `compose-ui` | Compose screens and components, states, strings, previews, screenshots | Only `presentation`, `core:ui`, `core:designsystem` |
+| `sdui-designer` | New block in the server-driven UI vocabulary | `core:common/sdui`, `core:network/sdui`, `core:ui/sdui` |
+| `test-engineer` | Tests in every layer, fakes, required coverage | Doesn't change production code without asking |
+| `architecture-guardian` | Reviews changes against ADRs and rules; evolves the rules | Reads and points out; changes a rule only with an ADR |
+| `docs-keeper` | Keeps `README.md`, `AGENTS.md`, `docs/`, ADRs and `ARCHITECTURE.md` consistent with the code | Documentation only |
 
-## Roadmap: onde investir
+## Roadmap: where to invest
 
-Ideias ordenadas por relação entre valor e esforço.
+Ideas ordered by value versus effort.
 
-### 1. Geradores determinísticos (scaffolding)
+### 1. Deterministic generators (scaffolding)
 
-Script `scripts/new-feature.sh <nome> [--with-api]` que cria os módulos, `build.gradle.kts`, pacotes, módulos Dagger, rota, `include` e testes vazios a partir de templates. A skill `feature-builder` chama o script em vez de escrever o boilerplate.
-**Por quê:** o agente gasta contexto e erra em código repetitivo; o gerador é determinístico e testável. O agente fica com a parte que exige julgamento (regra de negócio, UI).
+A `scripts/new-feature.sh <name> [--with-api]` script that creates the modules, `build.gradle.kts` files, packages, Dagger modules, route, `include` and empty tests from templates. The `feature-builder` skill calls the script instead of writing the boilerplate.
+**Why:** agents spend context and make mistakes on repetitive code; a generator is deterministic and testable. The agent keeps the part that needs judgment (business rules, UI).
 
-### 2. Revisão de PR por agente no CI
+### 2. Agent PR review in CI
 
-Job que roda em todo PR, envia o diff e a skill `architecture-guardian` para um modelo (o fornecedor fica numa variável de ambiente) e comenta violações de ADR que os testes não pegam: nomes ruins, use case com duas responsabilidades, string fora do padrão de tom.
-**Requisitos:** secret com a chave da API, limite de custo por PR, comentário só como sugestão (nunca bloqueia o merge sozinho).
+A job that runs on every PR, sends the diff and the `architecture-guardian` skill to a model (the vendor is an environment variable) and comments on ADR violations the tests don't catch: poor names, a use case with two responsibilities, strings off the tone guide.
+**Requirements:** a secret with the API key, a cost limit per PR, comments as suggestions only (never blocking the merge on its own).
 
-### 3. Avaliação das skills (evals)
+### 3. Skill evaluation (evals)
 
-Conjunto de tarefas de referência ("adicione o endpoint `movie/{id}/reviews`", "crie a feature `watchlist` com `api`") com critério objetivo de sucesso: `./scripts/verify.sh` passa e o diff respeita as regras. Rodar periodicamente com mais de um modelo mostra quando uma skill ou um `AGENTS.md` ficou ambíguo.
+A set of reference tasks ("add the `movie/{id}/reviews` endpoint", "create the `watchlist` feature with an `api` module") with an objective success criterion: `./scripts/verify.sh` passes and the diff respects the rules. Running them periodically with more than one model shows when a skill or an `AGENTS.md` has become ambiguous.
 
-### 4. Servidor MCP do projeto
+### 4. Project MCP server
 
-Servidor [MCP](https://modelcontextprotocol.io) (outro padrão da Agentic AI Foundation) com ferramentas próprias do repositório: `module_graph` (grafo atual em JSON), `explain_rule` (de uma regra Konsist para a ADR correspondente), `run_verify` (resultado estruturado em vez de log). Qualquer cliente MCP passa a consultar o projeto sem ler arquivos inteiros.
+An [MCP](https://modelcontextprotocol.io) server (another Agentic AI Foundation standard) with repository-specific tools: `module_graph` (current graph as JSON), `explain_rule` (from a Konsist rule to its ADR), `run_verify` (structured result instead of a log). Any MCP client can then query the project without reading whole files.
 
-### 5. Especificação antes do código
+### 5. Specification before code
 
-Template de issue com especificação estruturada: objetivo, telas, estados, endpoints, eventos de analytics, critérios de aceite. Um agente transforma a issue em plano e PR; a especificação vira o contrato de revisão.
+An issue template with a structured specification: goal, screens, states, endpoints, analytics events, acceptance criteria. An agent turns the issue into a plan and a PR; the specification becomes the review contract.
 
-### 6. Documentação verificada
+### 6. Verified documentation
 
-Expandir `scripts/check-docs.py` para comparar fatos da documentação com o código: lista de módulos do `settings.gradle.kts`, lista de features do Konsist, plugins registrados no `build-logic`. Documentação divergente quebra o CI.
+Extend `scripts/check-docs.py` to compare documentation facts with the code: the module list in `settings.gradle.kts`, the Konsist feature list, the plugins registered in `build-logic`. Diverging documentation breaks CI.
 
-### 7. Telemetria de qualidade dos agentes
+### 7. Agent quality telemetry
 
-Marcar PRs feitos com agente (label ou trailer de commit) e medir taxa de CI verde na primeira tentativa, número de revisões e regras mais violadas. Os dados mostram qual skill ou regra precisa de ajuste.
+Mark PRs made with an agent (label or commit trailer) and measure the first-try green CI rate, the number of review rounds and the most violated rules. The data shows which skill or rule needs adjusting.

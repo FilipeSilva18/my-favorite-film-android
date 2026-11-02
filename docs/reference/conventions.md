@@ -1,39 +1,39 @@
-# Convenções de código
+# Code conventions
 
-Resumo para consulta. A versão completa, com exemplos, está na seção 14 do [ARCHITECTURE.md](../../ARCHITECTURE.md#14-convenções-de-código).
+Summary for quick lookup. The full version, with examples, is in section 14 of [ARCHITECTURE.md](../../ARCHITECTURE.md#14-code-conventions).
 
-## Nomes
+## Names
 
-| Elemento | Padrão | Exemplo |
+| Element | Pattern | Example |
 |---|---|---|
-| Rota | `<Tela>Route` (`@Serializable`) | `MovieDetailRoute(movieId)` |
-| Composable com ViewModel | `<Tela>Screen` | `MovieDetailScreen` |
-| Composable sem estado | `<Tela>Content` | `MovieDetailContent` |
-| Estado de tela | `<Tela>UiState` (sealed interface) | `MovieDetailUiState` |
-| Modelo de UI | `<Nome>Ui` | `MovieCardUi` |
-| Use case | Verbo + substantivo + `UseCase` | `GetMovieDetailUseCase` |
-| Implementação de use case do `api` | `<Nome>UseCaseImpl` | `ToggleFavoriteUseCaseImpl` |
-| Repositório | `<Nome>Repository` / `<Nome>RepositoryImpl` (`internal`) | `MoviesRepositoryImpl` |
-| Data source | `<Tipo>LocalDataSource` / `<Tipo>RemoteDataSource` (`internal`) | `MoviesRemoteDataSource` |
-| DTO | `<Nome>Dto` (`internal`) | `MovieDto` |
-| Entity | `<Nome>Entity` | `FavoriteMovieEntity` |
-| Módulo Dagger | `<Feature><Camada>Module` público + `<Feature><Camada>BindsModule` interno | `MoviesDataModule` |
-| Navegação | `NavGraphBuilder.<tela>Screen()` / `NavController.navigateTo<Tela>()` | `movieDetailScreen()` |
-| Preview | `private fun <Nome>Preview()` com `@Preview` | `<Tela>Content<Estado>Preview` |
-| Teste | `<Classe>Test`, mesmo pacote | `MoviesViewModelTest` |
-| Fake | `Fake<Contrato>` / `Test<Contrato>` | `FakeFavorites`, `TestAnalytics` |
+| Route | `<Screen>Route` (`@Serializable`) | `MovieDetailRoute(movieId)` |
+| Composable with a ViewModel | `<Screen>Screen` | `MovieDetailScreen` |
+| Stateless composable | `<Screen>Content` | `MovieDetailContent` |
+| Screen state | `<Screen>UiState` (sealed interface) | `MovieDetailUiState` |
+| UI model | `<Name>Ui` | `MovieCardUi` |
+| Use case | Verb + noun + `UseCase` | `GetMovieDetailUseCase` |
+| Implementation of an `api` use case | `<Name>UseCaseImpl` | `ToggleFavoriteUseCaseImpl` |
+| Repository | `<Name>Repository` / `<Name>RepositoryImpl` (`internal`) | `MoviesRepositoryImpl` |
+| Data source | `<Type>LocalDataSource` / `<Type>RemoteDataSource` (`internal`) | `MoviesRemoteDataSource` |
+| DTO | `<Name>Dto` (`internal`) | `MovieDto` |
+| Entity | `<Name>Entity` | `FavoriteMovieEntity` |
+| Dagger module | Public `<Feature><Layer>Module` + internal `<Feature><Layer>BindsModule` | `MoviesDataModule` |
+| Navigation | `NavGraphBuilder.<screen>Screen()` / `NavController.navigateTo<Screen>()` | `movieDetailScreen()` |
+| Preview | `private fun <Name>Preview()` with `@Preview` | `<Screen>Content<State>Preview` |
+| Test | `<Class>Test`, same package | `MoviesViewModelTest` |
+| Fake | `Fake<Contract>` / `Test<Contract>` | `FakeFavorites`, `TestAnalytics` |
 
-## Regras
+## Rules
 
-- **Visibilidade:** `internal` por padrão. Público só o contrato do módulo.
-- **Imutabilidade:** `UiState` e modelos são `data class` com `val` e `List`.
-- **Use case:** uma responsabilidade, `operator fun invoke`, sem estado.
-- **ViewModel:** expõe `StateFlow` ou `Flow<PagingData>`, recebe eventos por `onXxx()`, nunca expõe `MutableStateFlow`.
-- **Compose:** `*Content` recebe estado e lambdas, sem ViewModel; previews de cada estado.
-- **Strings:** `values/strings.xml` (pt-BR) e `values-en/strings.xml`, inclusive `contentDescription` e unidades.
-- **Coroutines:** nunca capturar `CancellationException` sem relançar.
-- **Erros:** dados retornam `AppResult`; a UI mostra `DomainError.messageRes()`, nunca `e.message`.
-- **Comentários:** nenhum comentário explicativo no código; o porquê vai para ADRs.
-- **Idioma:** código, testes, mensagens de build e CI em inglês; documentação em português.
-- **Testes:** JVM com nomes entre crases (`` `blank query returns popular movies` ``); instrumentados em camelCase. Fakes, nunca mocks.
-- **Dependências:** versões só no `gradle/libs.versions.toml`; `api(...)` só quando o tipo aparece na API pública do módulo (ou para o KSP do `:app`).
+- **Visibility:** `internal` by default. Only the module's contract is public.
+- **Immutability:** `UiState` and models are `data class` with `val` and `List`.
+- **Use cases:** one responsibility, `operator fun invoke`, stateless.
+- **ViewModels:** expose `StateFlow` or `Flow<PagingData>`, receive events through `onXxx()`, never expose `MutableStateFlow`.
+- **Compose:** `*Content` receives state and lambdas, no ViewModel; previews for each state.
+- **Strings:** `values/strings.xml` (pt-BR) and `values-en/strings.xml`, including `contentDescription` and units.
+- **Coroutines:** never catch `CancellationException` without rethrowing it.
+- **Errors:** data returns `AppResult`; the UI shows `DomainError.messageRes()`, never `e.message`.
+- **Comments:** no explanatory comments in code; the why goes to ADRs.
+- **Language:** English for code, tests, build messages, CI and documentation. User-facing text lives in string resources (pt-BR and en).
+- **Tests:** JVM test names in backticks (`` `blank query returns popular movies` ``); instrumented tests in camelCase. Fakes, never mocks.
+- **Dependencies:** versions only in `gradle/libs.versions.toml`; `api(...)` only when the type appears in the module's public API (or for `:app`'s KSP).

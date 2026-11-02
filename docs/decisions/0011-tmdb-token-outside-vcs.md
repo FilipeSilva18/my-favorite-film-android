@@ -1,30 +1,30 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0011 — Token da TMDB fora do controle de versão
+# 0011 — TMDB token outside version control
 
-## Contexto e problema
+## Context and problem statement
 
-O token de leitura da TMDB é segredo e não pode aparecer no repositório.
+The TMDB read token is a secret and can't appear in the repository.
 
-## Opções consideradas
+## Considered options
 
-* `local.properties` → `BuildConfig` do `core:network`; secret no CI
-* Hardcode no código
+* `local.properties` → `BuildConfig` of `core:network`; secret in CI
+* Hardcoded in the code
 * Backend proxy
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Token em `local.properties` (ignorado) e no secret `TMDB_ACCESS_TOKEN` do CI, exposto via `BuildConfig`, porque mantém o segredo fora do Git com configuração simples.
+Chosen option: Token in `local.properties` (ignored) and in the `TMDB_ACCESS_TOKEN` CI secret, exposed through `BuildConfig`, because it keeps the secret out of Git with a simple setup.
 
-### Consequências
+### Consequences
 
-* Bom: Nenhum segredo versionado
-* Ruim: O token vai dentro do APK (aceitável para token de leitura; um proxy seria necessário para publicação séria)
+* Good: No committed secret
+* Bad: The token ships inside the APK (acceptable for a read token; a proxy would be required for a serious release)
 
-### Confirmação
+### Confirmation
 
-`.gitignore` e o hook `scripts/git-hooks/pre-commit`.
+`.gitignore` and the `scripts/git-hooks/pre-commit` hook.

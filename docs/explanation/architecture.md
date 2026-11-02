@@ -1,15 +1,15 @@
-# Arquitetura em diagramas
+# Architecture in diagrams
 
-Visão de alto nível. Os contratos e o código estão no [ARCHITECTURE.md](../../ARCHITECTURE.md); as decisões, em [decisions/](../decisions/README.md).
+High-level view. Contracts and code are in [ARCHITECTURE.md](../../ARCHITECTURE.md); decisions are in [decisions/](../decisions/README.md).
 
-## Camadas
+## Layers
 
 ```mermaid
 flowchart LR
     subgraph presentation["presentation (Android + Compose)"]
         Screen["Screen / Content"] --> VM["ViewModel"]
     end
-    subgraph domain["domain (Kotlin puro, JVM)"]
+    subgraph domain["domain (pure Kotlin, JVM)"]
         UC["UseCase"] --> RepoI["Repository (interface)"]
     end
     subgraph data["data (Android)"]
@@ -17,14 +17,14 @@ flowchart LR
         DS --> Src["Retrofit API / Room DAO / DataStore"]
     end
     VM --> UC
-    RepoImpl -. implementa .-> RepoI
+    RepoImpl -. implements .-> RepoI
 ```
 
-- **Dependency Inversion (ADR-0002):** o `domain` define `Repository`; o `data` implementa. A seta de dependência aponta para o domínio.
-- **ViewModel só com use cases (ADR-0004).** Repositório só com data sources (ADR-0018).
-- **UDF:** o ViewModel expõe `StateFlow<UiState>` (ou `Flow<PagingData>`); a tela envia eventos por funções `onXxx()`.
+- **Dependency inversion (ADR-0002):** `domain` defines `Repository`; `data` implements it. The dependency arrow points to the domain.
+- **ViewModels only use use cases (ADR-0004).** Repositories only use data sources (ADR-0018).
+- **UDF:** the ViewModel exposes `StateFlow<UiState>` (or `Flow<PagingData>`); the screen sends events through `onXxx()` functions.
 
-## Grafo de módulos
+## Module graph
 
 ```mermaid
 flowchart TD
@@ -83,15 +83,15 @@ flowchart TD
     aiFb --> ai
 ```
 
-Simplificado: as dependências de `core:common`, `core:analytics` e `core:testing` não estão todas desenhadas. A fonte da verdade são os `build.gradle.kts` e as regras do `moduleGraphAssert` no build raiz ([referência](../reference/architecture-rules.md)).
+Simplified: not every dependency on `core:common`, `core:analytics` and `core:testing` is drawn. The source of truth is the `build.gradle.kts` files and the `moduleGraphAssert` rules in the root build ([reference](../reference/architecture-rules.md)).
 
-**Leitura do grafo:**
-- Nenhuma seta entre features, exceto para `favorites:api` (ADR-0005 e ADR-0017).
-- Nenhuma seta de `core` para `feature`.
-- Firebase só nos módulos `-firebase`; as features veem `analytics` e `ai` (contratos JVM).
-- O `:app` é o único que conhece `data` e `presentation` de todas as features (composition root).
+**Reading the graph:**
+- No arrow between features, except to `favorites:api` (ADR-0005 and ADR-0017).
+- No arrow from `core` to `feature`.
+- Firebase only in the `-firebase` modules; features see `analytics` and `ai` (JVM contracts).
+- `:app` is the only module that knows every feature's `data` and `presentation` (composition root).
 
-## Grafo de DI (Dagger puro)
+## DI graph (pure Dagger)
 
 ```mermaid
 flowchart TD
@@ -101,13 +101,13 @@ flowchart TD
     AC --> AiMod["AiFirebaseModule"]
     AC --> FeatData["MoviesDataModule, MovieDetailDataModule, FavoritesDataModule"]
     AC --> VMB["ViewModelBindingModule"]
-    VMB --> VMC["ViewModelComponent (@Subcomponent, um por ViewModel, recebe SavedStateHandle)"]
+    VMB --> VMC["ViewModelComponent (@Subcomponent, one per ViewModel, receives SavedStateHandle)"]
     VMC --> Pres["<Feature>PresentationModule: @Binds @IntoMap @ViewModelKey"]
     Screen["Screen: daggerViewModel()"] --> Factory["DaggerViewModelFactory (core:di)"]
     Factory --> VMC
 ```
 
-## Fluxo: lista paginada
+## Flow: paged list
 
 ```mermaid
 sequenceDiagram
@@ -122,13 +122,13 @@ sequenceDiagram
     S->>VM: collectAsLazyPagingItems()
     VM->>UC: invoke(query)
     UC->>R: popularMovies() / searchMovies(query)
-    R-->>VM: Flow<PagingData<Movie>> (combinado com favoritos)
+    R-->>VM: Flow<PagingData<Movie>> (combined with favorites)
     PS->>DS: popular(page)
     DS->>API: GET movie/popular?page=n
     API-->>PS: PagedResponseDto → LoadResult.Page
 ```
 
-## Fluxo: busca com IA
+## Flow: AI search
 
 ```mermaid
 sequenceDiagram
@@ -139,35 +139,35 @@ sequenceDiagram
     participant F as GeminiJsonGenerator (core:ai-firebase)
     participant D as GetMoviesByFiltersUseCase
 
-    VM->>UC: invoke("suspense dos anos 90 bem avaliado")
+    VM->>UC: invoke("90s thriller with great reviews")
     UC->>I: interpret(description, genres)
     I->>G: generate(prompt, AiSchema)
-    G->>F: Gemini, saída estruturada, temperature 0
+    G->>F: Gemini, structured output, temperature 0
     F-->>I: JSON
-    I-->>UC: Understood(MovieFilters) após validação
+    I-->>UC: Understood(MovieFilters) after validation
     UC-->>VM: QueryInterpretation
-    VM->>D: discover/movie com os filtros
-    Note over VM: NotUnderstood ou Unavailable → busca por título
+    VM->>D: discover/movie with the filters
+    Note over VM: NotUnderstood or Unavailable → title search
 ```
 
-## Fluxo: erros
+## Flow: errors
 
 ```mermaid
 flowchart LR
     Ex["HttpException / IOException"] --> Safe["safeApiCall (core:network)"]
     Safe --> Res["AppResult.Failure(DomainError)"]
-    Safe -. inesperado .-> Rep["ErrorReporter.reportIfUnexpected"]
+    Safe -. unexpected .-> Rep["ErrorReporter.reportIfUnexpected"]
     Res --> UiErr["UiState.Error"]
     UiErr --> Msg["DomainError.messageRes() → strings.xml"]
 ```
 
-`CancellationException` sempre é relançada. Só `DomainError.Server` e `Unknown` viram não fatais no Crashlytics.
+`CancellationException` is always rethrown. Only `DomainError.Server` and `Unknown` become non-fatal reports in Crashlytics.
 
-## Por que este desenho
+## Why this design
 
-| Escolha | Ganho | Custo aceito |
+| Choice | Gain | Accepted cost |
 |---|---|---|
-| Módulo por camada e por feature | O compilador e o grafo garantem as fronteiras | Mais módulos (convention plugins reduzem o boilerplate) |
-| Dagger puro | Grafo explícito, erros em compilação | `api(...)` extras para o KSP do `:app` |
-| Contratos JVM para SDKs | Trocar fornecedor sem tocar features; testes sem SDK | Uma camada de indireção |
-| Regras como testes (Konsist + module-graph-assert) | Documentação executável; agentes e pessoas recebem feedback imediato | Testes a manter quando uma ADR muda |
+| Module per layer and per feature | The compiler and the graph enforce the boundaries | More modules (convention plugins reduce the boilerplate) |
+| Pure Dagger | Explicit graph, compile-time errors | Extra `api(...)` dependencies for `:app`'s KSP |
+| JVM contracts for SDKs | Swap vendors without touching features; tests without the SDK | One layer of indirection |
+| Rules as tests (Konsist + module-graph-assert) | Executable documentation; agents and people get immediate feedback | Tests to maintain when an ADR changes |

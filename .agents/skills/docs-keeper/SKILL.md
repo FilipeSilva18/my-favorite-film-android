@@ -1,6 +1,6 @@
 ---
 name: docs-keeper
-description: Keeps the MyFavoriteFilms documentation in sync with the code - AGENTS.md files, ARCHITECTURE.md, docs folder organized by Diataxis, MADR architecture decision records, module reference, commands and agent skills. Use after any change to modules, rules, conventions, commands or features, when asked to document something, or when documentation and code disagree.
+description: Keeps the MyFavoriteFilms documentation in sync with the code - README, AGENTS.md files, ARCHITECTURE.md, docs folder organized by Diataxis, MADR architecture decision records, module reference, commands and agent skills. Use after any change to modules, rules, conventions, commands or features, when asked to document something, or when documentation and code disagree.
 metadata:
   project: MyFavoriteFilms
   version: "1.0"
@@ -8,35 +8,35 @@ metadata:
 
 # Docs keeper
 
-Você mantém a documentação correta. O código é a fonte da verdade.
+You keep the documentation correct. The code is the source of truth.
 
-## Onde cada informação vive
+## Where each piece of information lives
 
-| Mudou | Atualize |
+| Changed | Update |
 |---|---|
-| Módulo novo ou removido | `docs/reference/modules.md`, seção 4 do `ARCHITECTURE.md`, `AGENTS.md` da pasta, diagrama em `docs/explanation/architecture.md` |
-| Feature nova | Seção 1 e seção própria do `ARCHITECTURE.md`, `feature/AGENTS.md` |
-| Decisão nova | `docs/decisions/NNNN-*.md`, índice em `docs/decisions/README.md`, tabela da seção 2 do `ARCHITECTURE.md` |
-| Regra Konsist ou de grafo | `docs/reference/architecture-rules.md`, `AGENTS.md` afetado |
-| Comando ou script | `docs/reference/commands.md`, `AGENTS.md` da raiz |
-| Convenção | `docs/reference/conventions.md`, seção 14 do `ARCHITECTURE.md` |
-| Procedimento recorrente | Guia em `docs/how-to/` e, se for tarefa de agente, skill em `.agents/skills/` |
+| New or removed module | `docs/reference/modules.md`, section 4 of `ARCHITECTURE.md`, the folder's `AGENTS.md`, diagrams in `docs/explanation/architecture.md` and `README.md` |
+| New feature | Section 1 and the feature's own section in `ARCHITECTURE.md`, `feature/AGENTS.md`, features table in `README.md` |
+| New decision | `docs/decisions/NNNN-*.md`, index in `docs/decisions/README.md`, table in section 2 of `ARCHITECTURE.md` |
+| Konsist or graph rule | `docs/reference/architecture-rules.md`, affected `AGENTS.md` |
+| Command or script | `docs/reference/commands.md`, root `AGENTS.md` |
+| Convention | `docs/reference/conventions.md`, section 14 of `ARCHITECTURE.md` |
+| Recurring procedure | Guide in `docs/how-to/` and, if it is an agent task, a skill in `.agents/skills/` |
 
-## Regras de escrita
+## Writing rules
 
-- Português, frases curtas, termos técnicos corretos (sem analogias).
-- Cada documento tem um tipo Diátaxis: tutorial, how-to, referência ou explicação. Não misture.
-- `AGENTS.md` curto (menos de 150 linhas): aponte para `docs/` em vez de repetir.
-- `SKILL.md`: frontmatter `name` igual ao nome da pasta, `description` em inglês dizendo o que faz e quando usar (até 1024 caracteres), corpo com menos de 500 linhas.
-- ADR aceita não é reescrita; crie outra e marque `superseded by`.
-- Nenhuma referência a uma ferramenta de IA específica como requisito.
-- Diagramas em Mermaid.
-- Nenhum segredo, token ou conteúdo de `google-services.json` em exemplos.
+- English, short sentences, precise technical terms (no analogies).
+- Each document has one Diátaxis type: tutorial, how-to, reference or explanation. Don't mix them.
+- Keep `AGENTS.md` short (under 150 lines): link to `docs/` instead of repeating.
+- `SKILL.md`: `name` in the frontmatter equal to the folder name, `description` saying what it does and when to use it (up to 1024 characters), body under 500 lines.
+- An accepted ADR is never rewritten; create a new one and mark the old one `superseded by`.
+- No reference to a specific AI tool as a requirement.
+- Diagrams in Mermaid.
+- No secret, token or `google-services.json` content in examples.
 
-## Verificar
+## Verify
 
 ```bash
 ./scripts/check-docs.py
 ```
 
-Confira também, por amostragem, que nomes de classes, arquivos e comandos citados existem no código.
+Also spot-check that the classes, files and commands mentioned exist in the code.

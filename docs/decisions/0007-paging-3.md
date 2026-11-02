@@ -1,30 +1,30 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0007 — Paging 3 para listas paginadas
+# 0007 — Paging 3 for paged lists
 
-## Contexto e problema
+## Context and problem statement
 
-A API da TMDB é paginada e a lista tem rolagem infinita, busca e retry.
+The TMDB API is paginated and the list has infinite scrolling, search and retry.
 
-## Opções consideradas
+## Considered options
 
-* Paging 3 com `paging-common` (JVM) no domain
-* Paginação manual no ViewModel
+* Paging 3 with `paging-common` (JVM) in the domain
+* Manual pagination in the ViewModel
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Paging 3, com `paging-common` no domain, porque é a solução oficial, trata loading/erro/retry por página e integra com Compose.
+Chosen option: Paging 3, with `paging-common` in the domain, because it is the official solution, handles loading/error/retry per page and integrates with Compose.
 
-### Consequências
+### Consequences
 
-* Bom: `LoadState` pronto para skeleton, rodapé e retry
-* Bom: `asSnapshot` para testes
-* Ruim: `PagingData` atravessa o domain (aceito: `paging-common` é JVM puro)
+* Good: `LoadState` ready for skeletons, footer and retry
+* Good: `asSnapshot` for tests
+* Bad: `PagingData` crosses the domain (accepted: `paging-common` is pure JVM)
 
-### Confirmação
+### Confirmation
 
-Testes `MoviesViewModelTest` (asSnapshot) e `MoviesRepositoryImplTest`.
+`MoviesViewModelTest` (asSnapshot) and `MoviesRepositoryImplTest`.

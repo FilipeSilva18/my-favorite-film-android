@@ -1,38 +1,38 @@
-# Adicionar um bloco Server-Driven UI
+# Add a server-driven UI block
 
-Quando o "servidor" precisa exibir um tipo de bloco que o app ainda não conhece. Contexto: ADR-0014 e ARCHITECTURE.md seção 7.10. Skill: [`sdui-designer`](../../.agents/skills/sdui-designer/SKILL.md).
+When the "server" needs to show a block type the app doesn't know yet. Context: ADR-0014 and ARCHITECTURE.md section 7.10. Skill: [`sdui-designer`](../../.agents/skills/sdui-designer/SKILL.md).
 
-## Antes de começar
+## Before you start
 
-- O bloco é genérico (serve para qualquer tela)? Se for específico de uma feature, provavelmente não é SDUI.
-- Dá para resolver com um bloco existente (`section_title`, `key_value_list`, `chip_group`, `text`, `link`, `divider`, `person_carousel`, `video_carousel`)?
-- Textos chegam prontos do servidor. O app não formata nem traduz conteúdo de bloco.
+- Is the block generic (useful to any screen)? If it is specific to one feature, it probably isn't SDUI.
+- Can an existing block do it (`section_title`, `key_value_list`, `chip_group`, `text`, `link`, `divider`, `person_carousel`, `video_carousel`)?
+- Texts arrive ready from the server. The app neither formats nor translates block content.
 
-## Passos
+## Steps
 
-1. **Modelo** — `core/common/.../sdui/SduiComponent.kt`: novo `data class` (ou `data object`) que implementa `SduiComponent`. Campos opcionais como `String?`; itens de lista em `data class` próprias.
+1. **Model** — `core/common/.../sdui/SduiComponent.kt`: a new `data class` (or `data object`) implementing `SduiComponent`. Optional fields as `String?`; list items in their own `data class`.
 2. **Parser** — `core/network/.../sdui/SduiParser.kt`:
-   - constante `TYPE_<NOME>` em `snake_case`;
-   - ramo no `when` de `toComponent()`;
-   - campo obrigatório ausente → `null` (o bloco é descartado); item inválido de lista → descartado; lista vazia após filtrar → bloco descartado.
-3. **Renderer** — `core/ui/.../sdui/SduiRenderer.kt`: ramo no `when` de `SduiComponentView`. Composable `private` próprio se tiver mais de algumas linhas. `contentDescription` e textos fixos (se houver) vêm de `strings.xml` do `core:ui`.
-4. **Backend simulado** — se uma tela já deve usar o bloco, gere-o no serviço de layout da feature (hoje `MovieDetailLayoutService` em `feature:moviedetail:data/sdui`). Rótulos vêm de `MovieDetailLayoutStrings`.
-5. **Testes:**
-   - `SduiParserTest`: JSON válido, campo obrigatório ausente, itens inválidos, lista vazia.
-   - `SduiRendererTest`: o bloco aparece e callbacks (ex.: abrir URL) disparam.
-   - `CoreUiScreenshotTest` (ou o screenshot da tela): claro e escuro; `./scripts/record-screenshots.sh :core:ui`.
-   - `MovieDetailLayoutServiceTest`, se o backend simulado mudou.
-6. **Documentação** — linha nova na tabela de tipos da seção 7.10 do `ARCHITECTURE.md`.
+   - a `TYPE_<NAME>` constant in `snake_case`;
+   - a branch in the `when` of `toComponent()`;
+   - missing required field → `null` (the block is dropped); invalid list item → dropped; list empty after filtering → block dropped.
+3. **Renderer** — `core/ui/.../sdui/SduiRenderer.kt`: a branch in the `when` of `SduiComponentView`. Its own `private` composable if it is more than a few lines. `contentDescription` and fixed texts (if any) come from `core:ui`'s `strings.xml`.
+4. **Simulated backend** — if a screen should already use the block, generate it in the feature's layout service (today `MovieDetailLayoutService` in `feature:moviedetail:data/sdui`). Labels come from `MovieDetailLayoutStrings`.
+5. **Tests:**
+   - `SduiParserTest`: valid JSON, missing required field, invalid items, empty list.
+   - `SduiRendererTest`: the block shows up and callbacks (e.g. opening a URL) fire.
+   - `CoreUiScreenshotTest` (or the screen's screenshot): light and dark; `./scripts/record-screenshots.sh :core:ui`.
+   - `MovieDetailLayoutServiceTest`, if the simulated backend changed.
+6. **Documentation** — a new row in the types table in section 7.10 of `ARCHITECTURE.md`.
 
-## Verificar
+## Verify
 
 ```bash
 ./scripts/verify-module.sh :core:network
 ./scripts/verify-module.sh :core:ui
 ```
 
-## Erros comuns
+## Common mistakes
 
-- Lançar exceção no parser para tipo desconhecido. O contrato é ignorar: versões antigas do app precisam sobreviver a blocos novos.
-- Colocar o modelo em `core:ui` ou na feature. O modelo é JVM (`core:common`) para o domain poder carregá-lo.
-- Formatar datas ou números no renderer. Isso é papel do servidor.
+- Throwing in the parser for an unknown type. The contract is to ignore it: old app versions must survive new blocks.
+- Putting the model in `core:ui` or in the feature. The model is JVM (`core:common`) so the domain can carry it.
+- Formatting dates or numbers in the renderer. That is the server's job.

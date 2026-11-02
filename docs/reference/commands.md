@@ -1,48 +1,48 @@
-# Comandos
+# Commands
 
-Todos rodam na raiz do repositório, com JDK 21.
+All of them run from the repository root, with JDK 21.
 
 ## Scripts
 
-| Script | O que faz |
+| Script | What it does |
 |---|---|
-| `./scripts/verify.sh` | Grafo de módulos, Konsist, testes JVM, screenshots e lint, sem parar no primeiro erro. É o que o job `checks` do CI roda |
-| `./scripts/verify.sh --quick` | Só grafo de módulos e Konsist (segundos) |
-| `./scripts/verify-module.sh <módulo>` | Testes JVM de um módulo + Konsist + grafo. Ex.: `:feature:movies:presentation` |
-| `./scripts/record-screenshots.sh [módulo]` | Regrava as referências Roborazzi (todas ou de um módulo) e lista os PNGs alterados |
-| `./scripts/install-git-hooks.sh` | Instala o `pre-commit` que bloqueia segredos |
-| `./scripts/check-docs.py` | Valida links relativos dos `.md` e o frontmatter das skills |
+| `./scripts/verify.sh` | Module graph, Konsist, JVM tests, screenshots and lint, without stopping at the first failure. It is what the CI `checks` job runs |
+| `./scripts/verify.sh --quick` | Only module graph and Konsist (seconds) |
+| `./scripts/verify-module.sh <module>` | JVM tests of one module + Konsist + graph. E.g. `:feature:movies:presentation` |
+| `./scripts/record-screenshots.sh [module]` | Re-records the Roborazzi references (all or one module) and lists the changed PNGs |
+| `./scripts/install-git-hooks.sh` | Installs the `pre-commit` hook that blocks secrets |
+| `./scripts/check-docs.py` | Validates relative links in `.md` files and the skills' frontmatter |
 
 ## Gradle
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `./gradlew assertModuleGraph` | Regras do grafo de módulos (`moduleGraphAssert` no build raiz) |
-| `./gradlew :architecture-test:unitTest` | Regras Konsist |
-| `./gradlew unitTest` | Todos os testes JVM (unit, integração, Compose com Robolectric, DI, Konsist) |
-| `./gradlew :<módulo>:unitTest` | Testes JVM de um módulo |
-| `./gradlew verifyRoborazziDebug` | Falha se um screenshot mudar |
-| `./gradlew recordRoborazziDebug` | Regrava screenshots |
-| `./gradlew compareRoborazziDebug` | Gera imagens de diff para revisar |
+| `./gradlew assertModuleGraph` | Module graph rules (`moduleGraphAssert` in the root build) |
+| `./gradlew :architecture-test:unitTest` | Konsist rules |
+| `./gradlew unitTest` | Every JVM test (unit, integration, Compose with Robolectric, DI, Konsist) |
+| `./gradlew :<module>:unitTest` | JVM tests of one module |
+| `./gradlew verifyRoborazziDebug` | Fails if a screenshot changes |
+| `./gradlew recordRoborazziDebug` | Re-records screenshots |
+| `./gradlew compareRoborazziDebug` | Generates diff images for review |
 | `./gradlew lintDebug` | Android Lint |
-| `./gradlew koverHtmlReport` | Cobertura agregada em `build/reports/kover/html` |
-| `./gradlew connectedDebugAndroidTest` | Testes instrumentados (emulador ou aparelho conectado) |
-| `./gradlew :app:assembleDebug` | APK de debug |
+| `./gradlew koverHtmlReport` | Aggregated coverage in `build/reports/kover/html` |
+| `./gradlew connectedDebugAndroidTest` | Instrumented tests (emulator or connected device) |
+| `./gradlew :app:assembleDebug` | Debug APK |
 
-## Configuração local
+## Local configuration
 
-| Arquivo | Conteúdo | Versionado |
+| File | Contents | Committed |
 |---|---|---|
-| `local.properties` | `sdk.dir`, `TMDB_ACCESS_TOKEN=<token de leitura da TMDB>` | Não |
-| `app/google-services.json` | Configuração do Firebase (opcional; sem ele analytics e IA ficam desligados) | Não |
+| `local.properties` | `sdk.dir`, `TMDB_ACCESS_TOKEN=<TMDB read access token>` | No |
+| `app/google-services.json` | Firebase configuration (optional; without it analytics and AI are disabled) | No |
 
-O token de debug do App Check aparece no Logcat (filtro `DebugAppCheckProvider`) e é cadastrado no console do Firebase. Ele muda quando o app é reinstalado ou os dados são apagados. Nunca é versionado.
+The App Check debug token shows up in Logcat (filter `DebugAppCheckProvider`) and is registered in the Firebase console. It changes when the app is reinstalled or its data is cleared. It is never committed.
 
-## CI (`.github/workflows/ci.yml`)
+## CI (`.github/workflows/ci.yml`, "Android CI")
 
-| Job | Passos |
+| Job | Steps |
 |---|---|
-| `checks` | Validação dos docs → `assertModuleGraph` → Konsist → `unitTest` → `verifyRoborazziDebug` → `lintDebug` → Kover |
-| `instrumented` | Emulador API 35 → `connectedDebugAndroidTest` |
+| `checks` | Docs check → `assertModuleGraph` → Konsist → `unitTest` → `verifyRoborazziDebug` → `lintDebug` → Kover |
+| `instrumented` | API 35 emulator → `connectedDebugAndroidTest` |
 
 Secrets: `TMDB_ACCESS_TOKEN`, `GOOGLE_SERVICES_JSON`.

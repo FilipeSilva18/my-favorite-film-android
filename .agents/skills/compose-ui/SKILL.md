@@ -8,41 +8,41 @@ metadata:
 
 # Compose UI
 
-Você cuida da camada `presentation` e de `core:ui` / `core:designsystem`.
+You own the `presentation` layer and `core:ui` / `core:designsystem`.
 
-## Antes de criar qualquer componente
+## Before creating any component
 
-Procure em `core:designsystem` (`MoviesTheme`, `MoviePoster`, `SearchField`, `LabelChips`) e `core:ui` (`LoadingContent`, `ErrorContent`, `EmptyContent`, `MovieCard`, `MovieGrid`, skeletons, `sduiItems`). Componente usado por duas features vai para o core (ADR-0015).
+Look in `core:designsystem` (`MoviesTheme`, `MoviePoster`, `SearchField`, `LabelChips`) and `core:ui` (`LoadingContent`, `ErrorContent`, `EmptyContent`, `MovieCard`, `MovieGrid`, skeletons, `sduiItems`). A component used by two features goes to the core (ADR-0015).
 
-## Passos para uma tela
+## Steps for a screen
 
-1. `<Tela>UiState`: `sealed interface` com `Loading`, `Success(...)`, `Error(DomainError)` (ou `Flow<PagingData>` para listas).
-2. `<Tela>ViewModel`: `@Inject constructor` só com use cases (+ `Analytics`, `SavedStateHandle`); expõe `StateFlow` com `stateIn(WhileSubscribed(5_000))`; eventos via `onXxx()`; nunca expõe `MutableStateFlow`.
-3. `<Tela>Screen`: `daggerViewModel()`, `collectAsStateWithLifecycle()`, `TrackScreenView(...)`, repassa para o `Content`.
-4. `<Tela>Content`: sem ViewModel; recebe estado e lambdas; `Modifier` como parâmetro; previews `private` terminados em `Preview` para cada estado.
-5. Strings em `values/strings.xml` (pt-BR) e `values-en/strings.xml`, inclusive `contentDescription`.
-6. Modelos de UI `<Nome>Ui` e mappers em `presentation/model`.
-7. Navegação em `presentation/navigation/`: rota `@Serializable`, `NavGraphBuilder.<tela>Screen()`, `NavController.navigateTo<Tela>()`.
-8. Dagger: `@Binds @IntoMap @ViewModelKey` no `<Feature>PresentationModule`.
+1. `<Screen>UiState`: `sealed interface` with `Loading`, `Success(...)`, `Error(DomainError)` (or `Flow<PagingData>` for lists).
+2. `<Screen>ViewModel`: `@Inject constructor` with only use cases (+ `Analytics`, `SavedStateHandle`); exposes a `StateFlow` with `stateIn(WhileSubscribed(5_000))`; events through `onXxx()`; never exposes `MutableStateFlow`.
+3. `<Screen>Screen`: `daggerViewModel()`, `collectAsStateWithLifecycle()`, `TrackScreenView(...)`, passes everything down to `Content`.
+4. `<Screen>Content`: no ViewModel; receives state and lambdas; `Modifier` parameter; private previews ending in `Preview` for each state.
+5. Strings in `values/strings.xml` (pt-BR) and `values-en/strings.xml`, including `contentDescription`.
+6. `<Name>Ui` UI models and mappers in `presentation/model`.
+7. Navigation in `presentation/navigation/`: `@Serializable` route, `NavGraphBuilder.<screen>Screen()`, `NavController.navigateTo<Screen>()`.
+8. Dagger: `@Binds @IntoMap @ViewModelKey` in `<Feature>PresentationModule`.
 
-## Regras
+## Rules
 
-- Nenhum texto literal em `@Composable` (Konsist `UiStringRulesTest`).
-- Insets: telas de aba aplicam topo e laterais; a bottom bar cuida do inferior.
-- Animações com APIs do Compose (`AnimatedVisibility`, `animateItem`, `animate*AsState`); respeite `disable-animations` nos testes.
-- Material 3 e cores do tema; nada de cor fixa fora do design system.
+- No literal text in a `@Composable` (Konsist `UiStringRulesTest`).
+- Insets: tab screens apply top and horizontal insets; the bottom bar handles the bottom.
+- Animations with Compose APIs (`AnimatedVisibility`, `animateItem`, `animate*AsState`); tests run with animations disabled.
+- Material 3 and theme colors; no hardcoded colors outside the design system.
 
-## Testes
+## Tests
 
-- `<Tela>ContentTest` (Robolectric, `@Config(sdk = [36])`): cada estado e cada callback; textos via `context.getString`.
-- `<Tela>ScreenshotTest` (Roborazzi): claro e escuro, `dynamicColor = false`, `pt-rBR`.
-- `<Tela>ViewModelTest` com Turbine e fakes.
+- `<Screen>ContentTest` (Robolectric, `@Config(sdk = [36])`): every state and every callback; texts through `context.getString`.
+- `<Screen>ScreenshotTest` (Roborazzi): light and dark, `dynamicColor = false`, `pt-rBR`.
+- `<Screen>ViewModelTest` with Turbine and fakes.
 
-## Verificar
+## Verify
 
 ```bash
 ./scripts/verify-module.sh :feature:<x>:presentation
 ./scripts/record-screenshots.sh :feature:<x>:presentation
 ```
 
-Revise os PNGs alterados antes de versionar.
+Review the changed PNGs before committing.

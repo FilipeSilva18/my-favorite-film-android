@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0013 — Módulos Dagger em par público + interno
+# 0013 — Dagger modules as a public + internal pair
 
-## Contexto e problema
+## Context and problem statement
 
-Com Dagger puro o `AppComponent` referencia os módulos de cada camada, mas implementações e DTOs devem ser `internal`.
+With pure Dagger the `AppComponent` references each layer's modules, but implementations and DTOs must stay `internal`.
 
-## Opções consideradas
+## Considered options
 
-* `object XxxModule` público com `includes` de um `internal interface XxxBindsModule`
-* Tudo público
+* A public `object XxxModule` that includes an `internal interface XxxBindsModule`
+* Everything public
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Par público + interno, porque o `:app` vê só o agregador e as implementações continuam `internal`.
+Chosen option: A public + internal pair, because `:app` only sees the aggregator and the implementations stay `internal`.
 
-### Consequências
+### Consequences
 
-* Bom: Encapsulamento preservado com Dagger puro
-* Ruim: Dois tipos por módulo Dagger
+* Good: Encapsulation preserved with pure Dagger
+* Bad: Two types per Dagger module
 
-### Confirmação
+### Confirmation
 
 Konsist: `repository implementations are internal...`, `data sources are internal...`, `DTOs are internal...`.

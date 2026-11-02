@@ -1,45 +1,45 @@
-# Usar agentes de IA neste repositório
+# Use AI agents in this repository
 
-Funciona com qualquer assistente de código. Nada aqui depende de um fornecedor.
+Works with any coding assistant. Nothing here depends on a vendor.
 
-## O que o agente encontra
+## What the agent finds
 
-| Arquivo | Quando é lido |
+| File | When it is read |
 |---|---|
-| `AGENTS.md` (raiz e por pasta) | Sempre, pelas ferramentas que suportam o formato. Contexto curto: mapa, comandos, regras, definição de pronto |
-| `.agents/skills/<nome>/SKILL.md` | Sob demanda, quando a tarefa bate com a `description` da skill |
-| `docs/` | Quando uma skill ou o `AGENTS.md` aponta para um guia |
+| `AGENTS.md` (root and per folder) | Always, by tools that support the format. Short context: map, commands, rules, definition of done |
+| `.agents/skills/<name>/SKILL.md` | On demand, when the task matches the skill's `description` |
+| `docs/` | When a skill or `AGENTS.md` points to a guide |
 
-## Skills disponíveis
+## Available skills
 
-| Skill | Use para |
+| Skill | Use for |
 |---|---|
-| [`feature-builder`](../../.agents/skills/feature-builder/SKILL.md) | Criar uma feature nova de ponta a ponta |
-| [`data-integrator`](../../.agents/skills/data-integrator/SKILL.md) | Endpoint da TMDB, DTO, data source, repositório, Room |
-| [`compose-ui`](../../.agents/skills/compose-ui/SKILL.md) | Telas, componentes, estados, previews, screenshots |
-| [`sdui-designer`](../../.agents/skills/sdui-designer/SKILL.md) | Bloco novo de Server-Driven UI |
-| [`test-engineer`](../../.agents/skills/test-engineer/SKILL.md) | Escrever ou corrigir testes em qualquer camada |
-| [`architecture-guardian`](../../.agents/skills/architecture-guardian/SKILL.md) | Revisar uma mudança contra as ADRs e regras |
-| [`docs-keeper`](../../.agents/skills/docs-keeper/SKILL.md) | Atualizar documentação depois de uma mudança |
+| [`feature-builder`](../../.agents/skills/feature-builder/SKILL.md) | Creating a new feature end to end |
+| [`data-integrator`](../../.agents/skills/data-integrator/SKILL.md) | TMDB endpoint, DTO, data source, repository, Room |
+| [`compose-ui`](../../.agents/skills/compose-ui/SKILL.md) | Screens, components, states, previews, screenshots |
+| [`sdui-designer`](../../.agents/skills/sdui-designer/SKILL.md) | New server-driven UI block |
+| [`test-engineer`](../../.agents/skills/test-engineer/SKILL.md) | Writing or fixing tests in any layer |
+| [`architecture-guardian`](../../.agents/skills/architecture-guardian/SKILL.md) | Reviewing a change against the ADRs and rules |
+| [`docs-keeper`](../../.agents/skills/docs-keeper/SKILL.md) | Updating documentation after a change |
 
-## Por ferramenta
+## Per tool
 
-| Ferramenta | Como usar |
+| Tool | How to use it |
 |---|---|
-| Gemini no Android Studio | Lê `AGENTS.md` e `.agents/skills/` sozinho (Android Studio Quail ou mais novo). Invoque uma skill com `@nome` no chat |
-| Codex, Copilot, Cursor, Gemini CLI, Junie e outras compatíveis com AGENTS.md | Lêem o `AGENTS.md` sozinhas. Skills: automático nas que suportam Agent Skills; nas outras, peça "siga `.agents/skills/<nome>/SKILL.md`" |
-| Ferramenta que lê outro nome de arquivo | Crie um link simbólico local para o `AGENTS.md` com o nome que ela espera, sem versioná-lo, ou referencie o `AGENTS.md` nas instruções dela |
-| Chat sem acesso ao repositório | Cole o conteúdo do `AGENTS.md` da raiz e o `SKILL.md` da tarefa no início da conversa |
+| Gemini in Android Studio | Reads `AGENTS.md` and `.agents/skills/` automatically (Android Studio Quail or newer). Invoke a skill with `@name` in the chat |
+| Codex, Copilot, Cursor, Gemini CLI, Junie and other AGENTS.md-compatible tools | Read `AGENTS.md` automatically. Skills: automatic in tools that support Agent Skills; in others, ask them to "follow `.agents/skills/<name>/SKILL.md`" |
+| A tool that reads a different file name | Create an uncommitted local symlink to `AGENTS.md` with the name it expects, or reference `AGENTS.md` in its instructions |
+| Chat without repository access | Paste the root `AGENTS.md` and the task's `SKILL.md` at the start of the conversation |
 
-## Pedindo bem
+## Asking well
 
-- Diga o resultado, não os passos: "crie a feature `watchlist` com lista e botão de adicionar, consumindo `account/{id}/watchlist/movies`".
-- Aponte a skill quando a ferramenta não escolher sozinha.
-- Peça o `./scripts/verify.sh` no fim. Um agente que roda os testes corrige os próprios erros; um que não roda entrega código que não compila.
-- Revise o diff como revisaria o de uma pessoa: o build garante as regras, não a qualidade da regra de negócio.
+- State the outcome, not the steps: "create the `watchlist` feature with a list and an add button, consuming `account/{id}/watchlist/movies`".
+- Point to the skill when the tool doesn't pick it on its own.
+- Ask for `./scripts/verify.sh` at the end. An agent that runs the tests fixes its own mistakes; one that doesn't delivers code that doesn't compile.
+- Review the diff as you would a person's: the build enforces the rules, not the quality of the business logic.
 
-## Segurança
+## Security
 
-- Rode `./scripts/install-git-hooks.sh`: o hook bloqueia `local.properties`, `google-services.json` e tokens mesmo que um agente tente commitá-los.
-- Não cole o token da TMDB nem o `google-services.json` na conversa com o agente.
-- Peça confirmação antes de o agente rodar comandos que publicam algo (push, release).
+- Run `./scripts/install-git-hooks.sh`: the hook blocks `local.properties`, `google-services.json` and tokens even if an agent tries to commit them.
+- Don't paste the TMDB token or `google-services.json` into the conversation with the agent.
+- Ask for confirmation before the agent runs commands that publish something (push, release).

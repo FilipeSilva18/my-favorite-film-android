@@ -1,8 +1,8 @@
 package com.faas.myfavoritefilms
 
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
-import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -26,7 +26,7 @@ class MoviesAppNavigationTest {
 
     @Test
     fun opensOnMoviesTabWithSearchField() {
-        tab(R.string.nav_movies).assert(isSelected())
+        tab(R.string.nav_movies).assertIsSelected()
         composeRule.onNodeWithText(string(MoviesR.string.movies_search_placeholder), useUnmergedTree = true).assertExists()
     }
 
@@ -34,7 +34,7 @@ class MoviesAppNavigationTest {
     fun navigatesToFavoritesShowsEmptyStateAndBack() {
         tab(R.string.nav_favorites).performClick()
 
-        tab(R.string.nav_favorites).assert(isSelected())
+        tab(R.string.nav_favorites).assertIsSelected()
         composeRule.onNodeWithText(string(FavoritesR.string.favorites_empty)).assertExists()
 
         tab(R.string.nav_movies).performClick()

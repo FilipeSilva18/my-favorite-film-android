@@ -1,33 +1,33 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0017 — Módulo api para features consumidas por outras
+# 0017 — api module for features consumed by other features
 
-## Contexto e problema
+## Context and problem statement
 
-Favoritos no core (ADR-0006) misturava regra de feature com regra transversal. `movies` e `moviedetail` ainda precisam favoritar sem depender da feature inteira.
+Favorites in the core (ADR-0006) mixed a feature rule with cross-cutting rules. `movies` and `moviedetail` still need to toggle favorites without depending on the whole feature.
 
-## Opções consideradas
+## Considered options
 
-* `:feature:favorites:api` (JVM) com modelo e interfaces finas + `domain`/`data`/`presentation`
-* Manter no core
-* Um único `:impl` com camadas em pacotes
-* `api` em todas as features
+* `:feature:favorites:api` (JVM) with the model and thin interfaces + `domain`/`data`/`presentation`
+* Keep it in the core
+* A single `:impl` with layers in packages
+* An `api` module in every feature
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Módulo `api` só para features consumidas por outras; a feature mantém os três módulos de camada, porque Dependency Inversion e Interface Segregation entre módulos; o `api` resolve visibilidade e as camadas resolvem organização interna.
+Chosen option: An `api` module only for features consumed by others; the feature keeps its three layer modules, because it applies Dependency Inversion and Interface Segregation between modules; the `api` module solves visibility and the layers solve internal organization.
 
-### Consequências
+### Consequences
 
-* Bom: Core só com regra transversal
-* Bom: Compile avoidance: consumidores não recompilam quando a implementação muda
-* Bom: Fakes em `testFixtures`
-* Ruim: `*UseCaseImpl` públicos, porque o binding fica no `data` (protegidos pelo grafo)
+* Good: Core only with cross-cutting rules
+* Good: Compile avoidance: consumers don't recompile when the implementation changes
+* Good: Fakes in `testFixtures`
+* Bad: Public `*UseCaseImpl` classes, because the binding lives in `data` (protected by the graph)
 
-### Confirmação
+### Confirmation
 
-module-graph-assert: `:feature:(movies|moviedetail|settings):.* -X> :feature:favorites:(domain|data|presentation)`; Konsist: importação de outra feature só por `.api.`.
+module-graph-assert: `:feature:(movies|moviedetail|settings):.* -X> :feature:favorites:(domain|data|presentation)`; Konsist: another feature is imported only through `.api.`.

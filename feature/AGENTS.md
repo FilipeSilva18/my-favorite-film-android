@@ -1,41 +1,41 @@
-# feature/ — funcionalidades
+# feature/ — features
 
-Complementa o [AGENTS.md da raiz](../AGENTS.md). Checklist detalhado: [feature/README.md](README.md). Passo a passo: [docs/how-to/add-feature.md](../docs/how-to/add-feature.md).
+Complements the [root AGENTS.md](../AGENTS.md). Detailed checklist: [feature/README.md](README.md). Step by step: [docs/how-to/add-feature.md](../docs/how-to/add-feature.md).
 
 ## Features
 
-| Feature | Módulos | Referência para |
+| Feature | Modules | Reference for |
 |---|---|---|
-| `movies` | `domain`, `data`, `presentation` | Paging 3, busca com debounce, busca com IA, data source remoto |
-| `moviedetail` | `domain`, `data`, `presentation` | `SavedStateHandle`, SDUI, tela com estados |
-| `favorites` | `api`, `domain`, `data`, `presentation` | Feature consumida por outras (ADR-0017), data source local (Room) |
-| `settings` | `presentation` | Feature só de UI sobre regras do `core:domain` |
+| `movies` | `domain`, `data`, `presentation` | Paging 3, debounced search, AI search, remote data source |
+| `moviedetail` | `domain`, `data`, `presentation` | `SavedStateHandle`, SDUI, screen with states |
+| `favorites` | `api`, `domain`, `data`, `presentation` | Feature consumed by others (ADR-0017), local data source (Room) |
+| `settings` | `presentation` | UI-only feature over `core:domain` rules |
 
-## Estrutura e plugins
+## Structure and plugins
 
 ```
-feature/<nome>/
-├── api/           movies.jvm.library + java-test-fixtures   (só se outra feature consumir)
+feature/<name>/
+├── api/           movies.jvm.library + java-test-fixtures   (only if another feature consumes it)
 ├── domain/        movies.jvm.library (+ movies.dagger)       model/ repository/ usecase/
 ├── data/          movies.android.feature.data                datasource/ remote/ mapper/ repository/ di/
-└── presentation/  movies.android.feature.presentation        di/ navigation/ model/ <Tela>Screen/ViewModel/UiState
+└── presentation/  movies.android.feature.presentation        di/ navigation/ model/ <Screen>Screen/ViewModel/UiState
 ```
 
-## Regras que o build verifica
+## Rules the build checks
 
-- Uma feature só importa outra pelo pacote `.api.` e só depende do módulo `:api` dela.
-- `presentation` não depende de `data`; `data` não depende de `presentation`.
-- `domain` sem Android, Room, Retrofit, Compose ou Dagger (só `javax.inject`).
-- Use case em `domain/usecase`, com um único `operator fun invoke` público.
-- Repositório: interface no `domain/repository`; `internal` `<Nome>RepositoryImpl` em `data/repository`, que depende de data sources.
-- DTO `internal` em `data/remote/dto`; data source `internal` em `data/datasource`.
-- ViewModel em `presentation`, termina em `ViewModel`, recebe só use cases, nunca expõe `MutableStateFlow`.
-- `@Preview` privado e terminado em `Preview`. Nenhum texto literal em `@Composable`.
+- A feature only imports another through the `.api.` package and only depends on its `:api` module.
+- `presentation` does not depend on `data`; `data` does not depend on `presentation`.
+- `domain` without Android, Room, Retrofit, Compose or Dagger (only `javax.inject`).
+- Use cases in `domain/usecase`, with a single public `operator fun invoke`.
+- Repository: interface in `domain/repository`; `internal` `<Name>RepositoryImpl` in `data/repository`, depending on data sources.
+- `internal` DTOs in `data/remote/dto`; `internal` data sources in `data/datasource`.
+- ViewModels in `presentation`, ending in `ViewModel`, receiving only use cases, never exposing `MutableStateFlow`.
+- `@Preview` functions private and ending in `Preview`. No literal text in a `@Composable`.
 
-## Dagger puro: atenção
+## Pure Dagger: watch out
 
-`data` e `presentation` declaram `api(projects.feature.<nome>.domain)`. O `AppComponent` é gerado no `:app` e precisa enxergar os tipos do domain. Sem isso o KSP falha com `'...Repository' could not be resolved`.
+`data` and `presentation` declare `api(projects.feature.<name>.domain)`. The `AppComponent` is generated in `:app` and must see the domain types. Without it KSP fails with `'...Repository' could not be resolved`.
 
-## Testes mínimos
+## Minimum tests
 
-`<UseCase>Test`, `<ViewModel>Test`, teste de contrato do data com MockWebServer e JSON real em `src/test/resources/tmdb/`, `<Tela>ContentTest`, `<Tela>ScreenshotTest`. Detalhes: [docs/how-to/write-tests.md](../docs/how-to/write-tests.md).
+`<UseCase>Test`, `<ViewModel>Test`, a data contract test with MockWebServer and real JSON in `src/test/resources/tmdb/`, `<Screen>ContentTest`, `<Screen>ScreenshotTest`. Details: [docs/how-to/write-tests.md](../docs/how-to/write-tests.md).

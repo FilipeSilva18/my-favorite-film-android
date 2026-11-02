@@ -1,31 +1,31 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0002 — Domain obrigatório e Kotlin puro
+# 0002 — Mandatory pure Kotlin domain
 
-## Contexto e problema
+## Context and problem statement
 
-No guia do Google o domain é opcional e depende do data. Queremos regras de negócio testáveis na JVM e independentes de Android, Retrofit e Room.
+In Google's guide the domain layer is optional and depends on data. We want business rules that are testable on the JVM and independent of Android, Retrofit and Room.
 
-## Opções consideradas
+## Considered options
 
-* Domain obrigatório, módulo JVM, define as interfaces de repositório (inversão de dependência)
-* Domain opcional dependendo do data (modelo do guia)
-* Sem domain: ViewModel fala com repositório
+* Mandatory domain, JVM module, defines the repository interfaces (dependency inversion)
+* Optional domain depending on data (the guide's model)
+* No domain: the ViewModel talks to the repository
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Domain obrigatório, módulo JVM que define as interfaces; o `data` implementa, porque aplica o Dependency Inversion Principle: a política (domain) não conhece o detalhe (data), e os testes rodam em milissegundos.
+Chosen option: A mandatory domain as a JVM module that defines the interfaces, implemented by `data`, because it applies the Dependency Inversion Principle: the policy (domain) doesn't know the detail (data), and the tests run in milliseconds.
 
-### Consequências
+### Consequences
 
-* Bom: Testes de domínio sem Robolectric
-* Bom: Trocar Retrofit/Room não muda o domain
-* Ruim: Mapeamento DTO → domínio em todo repositório
+* Good: Domain tests without Robolectric
+* Good: Replacing Retrofit or Room doesn't change the domain
+* Bad: DTO → domain mapping in every repository
 
-### Confirmação
+### Confirmation
 
 Konsist: `domain, common and the AI contract are pure Kotlin...`; module-graph-assert: `.*:domain -X> :core:(data|network|database|datastore|ui|designsystem|di)`.

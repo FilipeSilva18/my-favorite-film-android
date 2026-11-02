@@ -8,44 +8,44 @@ metadata:
 
 # Data integrator
 
-Você cuida da camada `data` e do contrato correspondente no `domain`.
+You own the `data` layer and the matching contract in `domain`.
 
-## Entradas
+## Inputs
 
-- Endpoint (método, path, query) ou tabela local.
-- Modelo de domínio esperado.
-- Uma resposta real do endpoint para virar fixture (sem token).
+- Endpoint (method, path, query) or local table.
+- Expected domain model.
+- A real response from the endpoint to use as a fixture (without the token).
 
-## Passos
+## Steps
 
-Siga [add-endpoint.md](../../../docs/how-to/add-endpoint.md). Resumo da ordem:
+Follow [add-endpoint.md](../../../docs/how-to/add-endpoint.md). Order:
 
-1. Fixture em `src/test/resources/tmdb/`.
-2. Teste de contrato vermelho no `<X>RepositoryImplTest` (MockWebServer + `TmdbJson`).
-3. Modelo e método do repositório no `domain`.
-4. DTO `internal` em `remote/dto`, API `internal` em `remote/api`.
-5. `<X>RemoteDataSource` `internal` em `datasource` (devolve DTO, sem `try/catch`).
-6. Mapper DTO → domínio.
-7. `RepositoryImpl` com `safeApiCall(onFailure = { c, e -> errorReporter.reportIfUnexpected(c, e, origin = "...") })`.
-8. Binding da API no módulo Dagger `internal`.
+1. Fixture in `src/test/resources/tmdb/`.
+2. Failing contract test in `<X>RepositoryImplTest` (MockWebServer + `TmdbJson`).
+3. Model and repository method in `domain`.
+4. `internal` DTO in `remote/dto`, `internal` API in `remote/api`.
+5. `internal` `<X>RemoteDataSource` in `datasource` (returns DTOs, no `try/catch`).
+6. DTO → domain mapper.
+7. `RepositoryImpl` with `safeApiCall(onFailure = { c, e -> errorReporter.reportIfUnexpected(c, e, origin = "...") })`.
+8. API binding in the `internal` Dagger module.
 
-Persistência local: entity e DAO em `core:database` (registrar a entity no `MoviesDatabase` e criar migração se o schema mudar), `<X>LocalDataSource` no `data` da feature, teste com Room in-memory e Robolectric.
+Local persistence: entity and DAO in `core:database` (register the entity in `MoviesDatabase` and add a migration if the schema changes), `<X>LocalDataSource` in the feature's `data` module, test with in-memory Room and Robolectric.
 
-## Regras
+## Rules
 
-- DTO, entity, Retrofit e Room nunca saem do módulo `data`.
-- Repositório não recebe `Api` nem `Dao`.
-- `CancellationException` sempre relançada.
-- Nada de 401/404/sem rede como não fatal: só `reportIfUnexpected`.
-- Nenhum teste chama a rede real.
+- DTOs, entities, Retrofit and Room never leave the `data` module.
+- Repositories don't receive an `Api` or a `Dao`.
+- `CancellationException` is always rethrown.
+- 401/404/no network are never non-fatal reports: only `reportIfUnexpected`.
+- No test calls the real network.
 
-## Pronto quando
+## Done when
 
-- [ ] Teste de contrato cobre path, query, mapeamento e erros HTTP.
-- [ ] Use case novo tem teste.
-- [ ] `./scripts/verify-module.sh :feature:<x>:data` passa.
+- [ ] The contract test covers path, query, mapping and HTTP errors.
+- [ ] Every new use case has a test.
+- [ ] `./scripts/verify-module.sh :feature:<x>:data` passes.
 
-## Verificar
+## Verify
 
 ```bash
 ./scripts/verify-module.sh :feature:<x>:data

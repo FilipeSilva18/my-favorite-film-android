@@ -1,31 +1,31 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0003 — Três módulos Gradle por feature
+# 0003 — Three Gradle modules per feature
 
-## Contexto e problema
+## Context and problem statement
 
-Fronteiras entre camadas em pacotes dependem de disciplina. Queremos que o compilador impeça a tela de tocar em Retrofit ou Room.
+Layer boundaries kept in packages depend on discipline. We want the compiler to stop a screen from touching Retrofit or Room.
 
-## Opções consideradas
+## Considered options
 
-* `domain`, `data` e `presentation` como módulos separados
-* Modelo Now in Android: feature só com UI e camadas em `core`
-* Um módulo por feature com camadas em pacotes
+* `domain`, `data` and `presentation` as separate modules
+* Now in Android model: features are UI only and layers live in `core`
+* One module per feature with layers in packages
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Cada feature tem até três módulos: `domain`, `data`, `presentation`, porque o grafo de módulos garante as fronteiras e habilita compilação incremental por camada.
+Chosen option: Each feature has up to three modules: `domain`, `data`, `presentation`, because the module graph enforces the boundaries and enables incremental compilation per layer.
 
-### Consequências
+### Consequences
 
-* Bom: Uma feature não importa o que não declarou
-* Bom: Build paralelo e compile avoidance
-* Ruim: Mais módulos e mais `build.gradle.kts` (mitigado pelos convention plugins)
+* Good: A feature can't import what it didn't declare
+* Good: Parallel builds and compile avoidance
+* Bad: More modules and more `build.gradle.kts` files (mitigated by convention plugins)
 
-### Confirmação
+### Confirmation
 
-Estrutura em `settings.gradle.kts`; module-graph-assert proíbe `presentation -X> data`.
+Structure in `settings.gradle.kts`; module-graph-assert forbids `presentation -X> data`.

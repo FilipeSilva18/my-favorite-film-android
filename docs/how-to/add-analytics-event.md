@@ -1,29 +1,29 @@
-# Adicionar um evento de analytics
+# Add an analytics event
 
-Contexto: ADR-0016 e ARCHITECTURE.md seção 7.11.
+Context: ADR-0016 and ARCHITECTURE.md section 7.11.
 
-## Passos
+## Steps
 
-1. **Evento** em `core/analytics/.../AnalyticsEvent.kt`:
-   - nome em `AnalyticsEvents` (`snake_case`, até 40 caracteres);
-   - parâmetros em `AnalyticsParams` (`snake_case`), reutilizando os existentes (`MOVIE_ID`, `SOURCE`, `SEARCH_TERM`);
-   - função fábrica de topo que devolve `AnalyticsEvent(name, params)`, no estilo de `searchEvent(...)` e `aiSearchEvent(...)`;
-   - valores fechados viram `enum` com `value` (como `MovieSource`).
-2. **Disparo** no ViewModel, com `Analytics` injetado no construtor:
+1. **Event** in `core/analytics/.../AnalyticsEvent.kt`:
+   - name in `AnalyticsEvents` (`snake_case`, up to 40 characters);
+   - parameters in `AnalyticsParams` (`snake_case`), reusing existing ones (`MOVIE_ID`, `SOURCE`, `SEARCH_TERM`);
+   - a top-level factory function returning `AnalyticsEvent(name, params)`, in the style of `searchEvent(...)` and `aiSearchEvent(...)`;
+   - closed sets of values become an `enum` with a `value` (like `MovieSource`).
+2. **Dispatch** from the ViewModel, with `Analytics` injected in the constructor:
    ```kotlin
    analytics.track(movieSharedEvent(movieId, MovieSource.DETAIL))
    ```
-   Telas: `TrackScreenView(ScreenNames.X)` (`core:ui`) no topo do `*Screen`; nome novo em `ScreenNames`.
-3. **Teste** no `<ViewModel>Test` com `TestAnalytics` (`core:testing`): afirme o evento e os parâmetros depois da ação.
-4. **Documentação:** linha na tabela "Eventos" da seção 7.11 do `ARCHITECTURE.md`.
+   Screens: `TrackScreenView(ScreenNames.X)` (`core:ui`) at the top of the `*Screen`; new name in `ScreenNames`.
+3. **Test** in `<ViewModel>Test` with `TestAnalytics` (`core:testing`): assert the event and its parameters after the action.
+4. **Documentation:** a row in the "Events" table in section 7.11 of `ARCHITECTURE.md`.
 
-## Regras
+## Rules
 
-- Nunca importe `com.google.firebase.*` numa feature. O Konsist falha.
-- Nunca envie dados pessoais (e-mail, nome) em parâmetros.
-- Erro inesperado não é evento: use `ErrorReporter.reportIfUnexpected` no `data`.
-- `track` é assíncrono e serializado; não espere o envio nem dependa de retorno.
+- Never import `com.google.firebase.*` in a feature. Konsist fails.
+- Never send personal data (email, name) as parameters.
+- An unexpected error is not an event: use `ErrorReporter.reportIfUnexpected` in `data`.
+- `track` is asynchronous and serialized; don't wait for delivery or depend on a return value.
 
-## Verificar
+## Verify
 
-Debug: Logcat filtrado por `Analytics`. Firebase: DebugView com `adb shell setprop debug.firebase.analytics.app com.faas.myfavoritefilms`.
+Debug: Logcat filtered by `Analytics`. Firebase: DebugView with `adb shell setprop debug.firebase.analytics.app com.faas.myfavoritefilms`.
