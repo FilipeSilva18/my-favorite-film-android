@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="movies_title">Movies</string>
+    <string name="movies_empty">No movies found.</string>
+    <string name="movies_search_placeholder">Search by title</string>
+    <string name="movies_search_empty">No movies found for \"%1$s\".</string>
+    <string name="movies_search_mode_title">Title</string>
+    <string name="movies_search_mode_ai">Search with AI</string>
+    <string name="movies_ai_placeholder">Describe the movie you want to watch</string>
+    <string name="movies_ai_hint">E.g. a well-rated 90s thriller. Tap search on the keyboard.</string>
+    <string name="movies_ai_interpreting">Understanding your request…</string>
+    <string name="movies_ai_not_understood">I couldn\'t understand that. Showing the title search.</string>
+    <string name="movies_ai_unavailable">AI search isn\'t available right now. Showing the title search.</string>
+    <string name="movies_ai_filters_empty">No movies match these filters.</string>
+    <string name="movies_filter_years_range">%1$d–%2$d</string>
+    <string name="movies_filter_years_from">From %1$d</string>
+    <string name="movies_filter_years_until">Until %1$d</string>
+    <string name="movies_filter_min_rating">Rating %1$s+</string>
+    <string name="movies_filter_sort_rating">Top rated</string>
+    <string name="movies_filter_sort_newest">Newest</string>
+    <string name="movies_filter_sort_popularity">Most popular</string>
+    <string name="movies_filter_remove">Remove filter %1$s</string>
+</resources>

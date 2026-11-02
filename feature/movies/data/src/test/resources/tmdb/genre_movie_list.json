@@ -1,0 +1,8 @@
+{
+  "genres": [
+    { "id": 28, "name": "Ação" },
+    { "id": 80, "name": "Crime" },
+    { "id": 53, "name": "Thriller" },
+    { "id": 35, "name": "Comédia" }
+  ]
+}

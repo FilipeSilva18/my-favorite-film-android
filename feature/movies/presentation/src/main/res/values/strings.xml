@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="movies_title">Filmes</string>
+    <string name="movies_empty">Nenhum filme encontrado.</string>
+    <string name="movies_search_placeholder">Buscar por título</string>
+    <string name="movies_search_empty">Nenhum filme encontrado para \"%1$s\".</string>
+    <string name="movies_search_mode_title">Título</string>
+    <string name="movies_search_mode_ai">Buscar com IA</string>
+    <string name="movies_ai_placeholder">Descreva o filme que você quer ver</string>
+    <string name="movies_ai_hint">Ex.: suspense dos anos 90 bem avaliado. Toque em buscar no teclado.</string>
+    <string name="movies_ai_interpreting">Entendendo o seu pedido…</string>
+    <string name="movies_ai_not_understood">Não entendi o pedido. Mostrando a busca por título.</string>
+    <string name="movies_ai_unavailable">A busca com IA não está disponível agora. Mostrando a busca por título.</string>
+    <string name="movies_ai_filters_empty">Nenhum filme encontrado com esses filtros.</string>
+    <string name="movies_filter_years_range">%1$d–%2$d</string>
+    <string name="movies_filter_years_from">A partir de %1$d</string>
+    <string name="movies_filter_years_until">Até %1$d</string>
+    <string name="movies_filter_min_rating">Nota %1$s+</string>
+    <string name="movies_filter_sort_rating">Mais bem avaliados</string>
+    <string name="movies_filter_sort_newest">Mais recentes</string>
+    <string name="movies_filter_sort_popularity">Mais populares</string>
+    <string name="movies_filter_remove">Remover filtro %1$s</string>
+</resources>

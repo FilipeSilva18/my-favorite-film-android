@@ -1,0 +1,15 @@
+{
+  "page": 2,
+  "results": [
+    {
+      "id": 438631,
+      "title": "Duna",
+      "overview": "Paul Atreides chega a Arrakis.",
+      "poster_path": "/dune.jpg",
+      "release_date": "2021-09-15",
+      "vote_average": 7.8
+    }
+  ],
+  "total_pages": 2,
+  "total_results": 3
+}
