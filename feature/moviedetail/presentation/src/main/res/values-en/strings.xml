@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="detail_overview">Overview</string>
+    <string name="detail_votes">%1$s votes</string>
+    <string name="detail_runtime_minutes">%1$dmin</string>
+    <string name="detail_runtime_hours">%1$dh</string>
+    <string name="detail_runtime_hours_minutes">%1$dh %2$dmin</string>
+    <string name="detail_year_runtime">%1$s · %2$s</string>
+</resources>

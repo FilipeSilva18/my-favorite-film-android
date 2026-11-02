@@ -1,0 +1,46 @@
+{
+  "adult": false,
+  "backdrop_path": "/matrix_backdrop.jpg",
+  "belongs_to_collection": { "id": 2344, "name": "Matrix: Coleção" },
+  "budget": 63000000,
+  "genres": [ { "id": 28, "name": "Ação" }, { "id": 878, "name": "Ficção científica" } ],
+  "homepage": "https://www.warnerbros.com/movies/matrix",
+  "id": 603,
+  "imdb_id": "tt0133093",
+  "original_language": "en",
+  "original_title": "The Matrix",
+  "overview": "Um hacker descobre que a realidade é uma simulação.",
+  "popularity": 87.512,
+  "poster_path": "/matrix.jpg",
+  "production_companies": [
+    { "id": 79, "logo_path": "/x.png", "name": "Village Roadshow Pictures", "origin_country": "US" },
+    { "id": 174, "logo_path": "/y.png", "name": "Warner Bros. Pictures", "origin_country": "US" }
+  ],
+  "production_countries": [ { "iso_3166_1": "US", "name": "Estados Unidos da América" } ],
+  "release_date": "1999-03-30",
+  "revenue": 463517383,
+  "runtime": 136,
+  "spoken_languages": [ { "english_name": "English", "iso_639_1": "en", "name": "English" } ],
+  "status": "Released",
+  "tagline": "Bem-vindo ao mundo real.",
+  "title": "Matrix",
+  "video": false,
+  "vote_average": 8.2,
+  "vote_count": 25431,
+  "credits": {
+    "cast": [
+      { "id": 6384, "name": "Keanu Reeves", "character": "Neo", "profile_path": "/keanu.jpg", "order": 0 },
+      { "id": 530, "name": "Carrie-Anne Moss", "character": "Trinity", "profile_path": null, "order": 2 },
+      { "id": 2975, "name": "Laurence Fishburne", "character": "Morpheus", "profile_path": "/laurence.jpg", "order": 1 }
+    ],
+    "crew": []
+  },
+  "videos": {
+    "results": [
+      { "key": "bts1", "name": "Behind the scenes", "site": "YouTube", "type": "Featurette", "official": true },
+      { "key": "vimeo1", "name": "Vimeo trailer", "site": "Vimeo", "type": "Trailer", "official": true },
+      { "key": "teaser1", "name": "Teaser", "site": "YouTube", "type": "Teaser", "official": true },
+      { "key": "trailer1", "name": "Official Trailer", "site": "YouTube", "type": "Trailer", "official": true }
+    ]
+  }
+}

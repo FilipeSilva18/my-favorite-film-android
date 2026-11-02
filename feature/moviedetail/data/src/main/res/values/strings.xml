@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdui_technical_sheet">Ficha técnica</string>
+    <string name="sdui_original_title">Título original</string>
+    <string name="sdui_original_language">Idioma original</string>
+    <string name="sdui_status">Status</string>
+    <string name="sdui_release_date">Lançamento</string>
+    <string name="sdui_budget">Orçamento</string>
+    <string name="sdui_revenue">Bilheteria</string>
+    <string name="sdui_vote_count">Avaliações</string>
+    <string name="sdui_popularity">Popularidade</string>
+    <string name="sdui_genres">Gêneros</string>
+    <string name="sdui_production_companies">Produtoras</string>
+    <string name="sdui_production_countries">Países de produção</string>
+    <string name="sdui_spoken_languages">Idiomas falados</string>
+    <string name="sdui_homepage">Site oficial</string>
+    <string name="sdui_imdb">Ver no IMDb</string>
+    <string name="sdui_status_released">Lançado</string>
+    <string name="sdui_status_post_production">Pós-produção</string>
+    <string name="sdui_status_in_production">Em produção</string>
+    <string name="sdui_status_planned">Planejado</string>
+    <string name="sdui_status_rumored">Rumor</string>
+    <string name="sdui_status_canceled">Cancelado</string>
+    <string name="sdui_cast">Elenco</string>
+    <string name="sdui_videos">Trailers e vídeos</string>
+</resources>
