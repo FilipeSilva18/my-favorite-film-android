@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty">You have no favorite movies yet.\nTap a movie\'s heart to save it here.</string>
+</resources>
