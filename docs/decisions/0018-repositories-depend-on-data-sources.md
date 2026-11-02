@@ -1,30 +1,30 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0018 — Repositórios dependem de data sources
+# 0018 — Repositories depend on data sources
 
-## Contexto e problema
+## Context and problem statement
 
-Repositórios recebiam DAO ou API Retrofit direto, misturando acesso a fonte com orquestração.
+Repositories received a DAO or a Retrofit API directly, mixing source access with orchestration.
 
-## Opções consideradas
+## Considered options
 
-* Data sources `internal` em `data/datasource` (`<Tipo>LocalDataSource`, `<Tipo>RemoteDataSource`)
-* DAO/API direto no repositório
+* `internal` data sources in `data/datasource` (`<Type>LocalDataSource`, `<Type>RemoteDataSource`)
+* DAO/API directly in the repository
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Repositório depende de data sources; cada data source fala com uma única fonte e devolve modelos da camada de dados, porque formato do guia de data layer; repositório focado em política (mapeamento, cache, erros).
+Chosen option: Repositories depend on data sources; each data source talks to a single source and returns data-layer models, because it is the data layer guide's shape; the repository focuses on policy (mapping, caching, errors).
 
-### Consequências
+### Consequences
 
-* Bom: Ponto de extensão para cache offline
-* Bom: Consistência entre repositórios
-* Ruim: Uma classe a mais por fonte
+* Good: Extension point for an offline cache
+* Good: Consistency across repositories
+* Bad: One more class per source
 
-### Confirmação
+### Confirmation
 
 Konsist: `repositories talk to data sources, never to a DAO or a Retrofit API directly`, `data sources are internal and live in data datasource`.

@@ -1,30 +1,30 @@
 ---
 status: superseded by [ADR-0017](0017-feature-api-module.md)
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0006 — Favoritos em core:domain e core:data
+# 0006 — Favorites in core:domain and core:data
 
-## Contexto e problema
+## Context and problem statement
 
-`movies` e `moviedetail` precisavam favoritar e observar favoritos sem depender uma da outra.
+`movies` and `moviedetail` needed to toggle and observe favorites without depending on each other.
 
-## Opções consideradas
+## Considered options
 
-* Favoritos em `core:domain` + `core:data`
-* Feature `favorites` com módulo público
+* Favorites in `core:domain` + `core:data`
+* A `favorites` feature with a public module
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Favoritos em `core:domain` + `core:data`, porque era a forma mais simples de compartilhar a regra respeitando a ADR-0005.
+Chosen option: Favorites in `core:domain` + `core:data`, because it was the simplest way to share the rule while respecting ADR-0005.
 
-### Consequências
+### Consequences
 
-* Bom: Simples
-* Ruim: `core` passou a ter regra de uma feature específica
-* Ruim: A tela de favoritos ficava separada da própria regra
+* Good: Simple
+* Bad: `core` started holding a specific feature's rule
+* Bad: The favorites screen was separated from its own rule
 
-### Confirmação
+### Confirmation
 
-Substituída: o código atual segue a ADR-0017.
+Superseded: the current code follows ADR-0017.

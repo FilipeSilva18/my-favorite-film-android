@@ -1,27 +1,27 @@
-# Registrar uma decisão de arquitetura (ADR)
+# Record an architecture decision (ADR)
 
-## Quando escrever
+## When to write one
 
-- Escolha entre alternativas que afeta mais de um módulo ou que alguém vai questionar depois.
-- Mudança ou relaxamento de uma regra do Konsist ou do `moduleGraphAssert`.
-- Adoção ou troca de biblioteca estrutural (DI, navegação, persistência, rede).
+- A choice between alternatives that affects more than one module or that someone will question later.
+- Changing or relaxing a Konsist or `moduleGraphAssert` rule.
+- Adopting or replacing a structural library (DI, navigation, persistence, network).
 
-Não precisa de ADR: detalhes internos de uma classe, refatorações que mantêm as regras.
+No ADR needed: internal details of a class, refactors that keep the rules.
 
-## Passos
+## Steps
 
-1. Copie [`docs/decisions/adr-template.md`](../decisions/adr-template.md) para `docs/decisions/NNNN-titulo-em-ingles.md`, com o próximo número livre.
-2. Preencha em português: contexto, opções consideradas (pelo menos duas), decisão com o motivo, consequências boas e ruins, **confirmação** (qual teste ou regra garante a decisão).
-3. Status `proposed` enquanto estiver em discussão; `accepted` no merge.
-4. Se substitui outra ADR: na antiga, mude só o status para `superseded by [ADR-NNNN](NNNN-....md)`.
-5. Atualize:
-   - o índice em `docs/decisions/README.md`;
-   - a tabela da seção 2 do `ARCHITECTURE.md` (uma linha resumida);
-   - a regra Konsist ou do grafo, se a decisão é verificável;
-   - `docs/reference/architecture-rules.md` e o `AGENTS.md` afetado.
+1. Copy [`docs/decisions/adr-template.md`](../decisions/adr-template.md) to `docs/decisions/NNNN-title-with-dashes.md`, with the next free number.
+2. Fill in: context, considered options (at least two), the decision with its reason, good and bad consequences, **confirmation** (which test or rule enforces the decision).
+3. Status `proposed` while under discussion; `accepted` on merge.
+4. If it supersedes another ADR: in the old one, change only the status to `superseded by [ADR-NNNN](NNNN-....md)`.
+5. Update:
+   - the index in `docs/decisions/README.md`;
+   - the table in section 2 of `ARCHITECTURE.md` (one summary row);
+   - the Konsist or graph rule, if the decision is verifiable;
+   - `docs/reference/architecture-rules.md` and the affected `AGENTS.md`.
 
-## Boas práticas
+## Good practices
 
-- Uma decisão por ADR.
-- Escreva o motivo técnico, não a preferência ("garante X em compilação", não "é mais bonito").
-- Registre a alternativa descartada e por quê; é a parte mais útil seis meses depois.
+- One decision per ADR.
+- Write the technical reason, not the preference ("enforces X at compile time", not "it looks nicer").
+- Record the discarded alternative and why; it is the most useful part six months later.

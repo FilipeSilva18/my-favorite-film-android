@@ -1,46 +1,46 @@
 ---
 status: proposed
-date: AAAA-MM-DD
-decision-makers: nomes
+date: YYYY-MM-DD
+decision-makers: names
 ---
 
-# NNNN — Título curto com o problema e a solução
+# NNNN — Short title stating the problem and the solution
 
-## Contexto e problema
+## Context and problem statement
 
-Duas ou três frases: qual é a situação e qual pergunta a decisão responde.
+Two or three sentences: what the situation is and which question the decision answers.
 
-## Fatores de decisão
+## Decision drivers
 
-* Fator 1 (ex.: testabilidade na JVM)
-* Fator 2 (ex.: compatibilidade com Dagger puro)
+* Driver 1 (e.g. testability on the JVM)
+* Driver 2 (e.g. compatibility with pure Dagger)
 
-## Opções consideradas
+## Considered options
 
-* Opção A
-* Opção B
-* Opção C
+* Option A
+* Option B
+* Option C
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: "Opção A", porque motivo principal.
+Chosen option: "Option A", because main reason.
 
-### Consequências
+### Consequences
 
-* Bom: ...
-* Ruim: ...
+* Good, because ...
+* Bad, because ...
 
-### Confirmação
+### Confirmation
 
-Como saber que o código segue a decisão: teste Konsist, regra do `assertModuleGraph`, teste específico ou revisão manual.
+How to know the code follows the decision: Konsist test, `assertModuleGraph` rule, specific test or manual review.
 
-## Prós e contras das opções
+## Pros and cons of the options
 
-### Opção B
+### Option B
 
-* Bom: ...
-* Ruim: ...
+* Good, because ...
+* Bad, because ...
 
-## Mais informações
+## More information
 
-Links para issues, PRs, documentação externa e ADRs relacionadas.
+Links to issues, PRs, external documentation and related ADRs.

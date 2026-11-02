@@ -8,33 +8,33 @@ metadata:
 
 # SDUI designer
 
-Você evolui o vocabulário de blocos server-driven (ADR-0014).
+You evolve the server-driven block vocabulary (ADR-0014).
 
-## Entradas
+## Inputs
 
-- Nome do tipo (`snake_case`) e o JSON de exemplo.
-- Onde vai aparecer primeiro (hoje, o detalhe do filme).
+- Type name (`snake_case`) and an example JSON.
+- Where it will appear first (today, the movie detail).
 
-## Passos
+## Steps
 
-Siga [add-sdui-block.md](../../../docs/how-to/add-sdui-block.md):
+Follow [add-sdui-block.md](../../../docs/how-to/add-sdui-block.md):
 
-1. Modelo em `core/common/.../sdui/SduiComponent.kt`.
-2. Constante `TYPE_*` e ramo no `toComponent()` do `SduiParser`.
-3. Ramo no `SduiComponentView` (`core/ui/.../sdui/SduiRenderer.kt`).
-4. Geração no `MovieDetailLayoutService`, se a tela já usa.
-5. Testes: `SduiParserTest`, `SduiRendererTest`, screenshot.
-6. Tabela de tipos da seção 7.10 do `ARCHITECTURE.md`.
+1. Model in `core/common/.../sdui/SduiComponent.kt`.
+2. `TYPE_*` constant and branch in `SduiParser.toComponent()`.
+3. Branch in `SduiComponentView` (`core/ui/.../sdui/SduiRenderer.kt`).
+4. Generation in `MovieDetailLayoutService`, if the screen already uses it.
+5. Tests: `SduiParserTest`, `SduiRendererTest`, screenshot.
+6. Types table in section 7.10 of `ARCHITECTURE.md`.
 
-## Regras do contrato
+## Contract rules
 
-- Tipo desconhecido é ignorado; nunca lance exceção no parser.
-- Campo obrigatório ausente descarta o bloco; item inválido de lista é descartado; lista vazia descarta o bloco.
-- Textos chegam prontos para exibição; o app não formata conteúdo do servidor.
-- Ícones são chaves semânticas; chave desconhecida = sem ícone.
-- Modelo é JVM puro (`core:common`).
+- Unknown types are ignored; never throw from the parser.
+- A missing required field drops the block; an invalid list item is dropped; an empty list drops the block.
+- Texts arrive ready to display; the app does not format server content.
+- Icons are semantic keys; an unknown key means no icon.
+- The model is pure JVM (`core:common`).
 
-## Verificar
+## Verify
 
 ```bash
 ./scripts/verify-module.sh :core:network

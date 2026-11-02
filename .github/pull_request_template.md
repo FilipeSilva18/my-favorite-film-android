@@ -1,23 +1,23 @@
-## O que muda
+## What changes
 
-<!-- Uma ou duas frases. Link da issue, se houver. -->
+<!-- One or two sentences. Link to the issue, if any. -->
 
-## Como foi verificado
+## How it was verified
 
-- [ ] `./scripts/verify.sh` passa localmente
-- [ ] Testado no app (descreva o fluxo)
+- [ ] `./scripts/verify.sh` passes locally
+- [ ] Tested in the app (describe the flow)
 
-## Definição de pronto
+## Definition of done
 
-- [ ] Todo `UseCase`, `UseCaseImpl` e `ViewModel` novo tem `<Nome>Test`
-- [ ] Tela nova ou alterada tem `ContentTest` e `ScreenshotTest`; PNGs revisados
-- [ ] ViewModel novo registrado no `DependencyGraphTest`
-- [ ] Strings novas em `values/` e `values-en/`
-- [ ] Decisão nova ou alterada registrada em `docs/decisions/` e no `ARCHITECTURE.md`
-- [ ] Documentação atualizada (`AGENTS.md`, `docs/`)
-- [ ] Nenhum segredo, `local.properties` ou `google-services.json` no diff
+- [ ] Every new `UseCase`, `UseCaseImpl` and `ViewModel` has a `<Name>Test`
+- [ ] New or changed screens have `ContentTest` and `ScreenshotTest`; PNGs reviewed
+- [ ] New ViewModels registered in `DependencyGraphTest`
+- [ ] New strings in `values/` and `values-en/`
+- [ ] New or changed decisions recorded in `docs/decisions/` and in `ARCHITECTURE.md`
+- [ ] Documentation updated (`README.md`, `AGENTS.md`, `docs/`)
+- [ ] No secret, `local.properties` or `google-services.json` in the diff
 
-## Feito com agente de IA?
+## Made with an AI agent?
 
-- [ ] Sim — skills usadas:
-- [ ] Não
+- [ ] Yes — skills used:
+- [ ] No

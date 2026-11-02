@@ -1,31 +1,31 @@
-# Regras de arquitetura executáveis
+# Executable architecture rules
 
-As regras da arquitetura são verificadas em duas camadas. Quando uma falha, a mensagem aponta o arquivo; a correção é no código, não na regra.
+Architecture rules are checked at two levels. When one fails, the message points to the file; the fix goes in the code, not in the rule.
 
-## 1. Grafo de módulos (`./gradlew assertModuleGraph`)
+## 1. Module graph (`./gradlew assertModuleGraph`)
 
-Configurado em `moduleGraphAssert` no `build.gradle.kts` raiz. `-X>` significa "não pode depender de".
+Configured in `moduleGraphAssert` in the root `build.gradle.kts`. `-X>` means "must not depend on".
 
-| Regra | Decisão |
+| Rule | Decision |
 |---|---|
-| `:feature:movies:.* -X> :feature:(moviedetail\|settings):.*` (e equivalentes para cada feature) | ADR-0005 |
+| `:feature:movies:.* -X> :feature:(moviedetail\|settings):.*` (and equivalents for each feature) | ADR-0005 |
 | `:feature:(movies\|moviedetail\|settings):.* -X> :feature:favorites:(domain\|data\|presentation)` | ADR-0017 |
 | `:feature:favorites:api -X> :feature:favorites:(domain\|data\|presentation)` | ADR-0017 |
 | `:feature:.*:api -X> :core:(data\|network\|database\|datastore\|ui\|designsystem\|di\|analytics\|ai)` | ADR-0017 |
 | `:core:.* -X> :feature:.*` | ADR-0005 |
-| `:feature:.*:presentation -X> .*:data` e `:feature:.*:data -X> .*:presentation` | ADR-0003 |
+| `:feature:.*:presentation -X> .*:data` and `:feature:.*:data -X> .*:presentation` | ADR-0003 |
 | `.*:domain -X> :core:(data\|network\|database\|datastore\|ui\|designsystem\|di)` | ADR-0002 |
 | `:core:(network\|database\|datastore) -X> :core:(domain\|data)` | ADR-0002 |
-| `:feature:.* -X> :core:ai-firebase` | ADR-0016 (mesmo padrão para IA) |
+| `:feature:.* -X> :core:ai-firebase` | ADR-0016 (same pattern for AI) |
 | `:feature:.*:presentation -X> :core:datastore` | ADR-0004 |
-| `:core:common -X> :core:.*` | `common` é a base do grafo |
-| `maxHeight = 6` | Grafo raso, build paralelo |
+| `:core:common -X> :core:.*` | `common` is the base of the graph |
+| `maxHeight = 6` | Shallow graph, parallel build |
 
 ## 2. Konsist (`./gradlew :architecture-test:unitTest`)
 
 ### `LayerRulesTest`
 
-| Teste | Decisão |
+| Test | Decision |
 |---|---|
 | `domain, common and the AI contract are pure Kotlin - no Android, Compose, Room, Retrofit, OkHttp or Dagger` | ADR-0002 |
 | `presentation never imports the data layer` | ADR-0003 |
@@ -38,9 +38,9 @@ Configurado em `moduleGraphAssert` no `build.gradle.kts` raiz. `-X>` significa "
 
 ### `NamingAndVisibilityRulesTest`
 
-| Teste | Decisão |
+| Test | Decision |
 |---|---|
-| `use cases live in domain usecase and expose a single public operator invoke` | Convenções |
+| `use cases live in domain usecase and expose a single public operator invoke` | Conventions |
 | `use case implementations live in domain usecase` | ADR-0017 |
 | `repository contracts are interfaces in domain` | ADR-0002 |
 | `repository implementations are internal and live in data repository` | ADR-0013 |
@@ -49,33 +49,33 @@ Configurado em `moduleGraphAssert` no `build.gradle.kts` raiz. `-X>` significa "
 | `DTOs are internal and live in remote dto` | ADR-0013 |
 | `ViewModel subclasses end with ViewModel and live in presentation` | ADR-0001 |
 | `ViewModel depends on use cases, never on repositories (ADR-04)` | ADR-0004 |
-| `ViewModel never exposes public mutable flows` | Convenções |
-| `Compose previews are private and end with Preview` | Convenções |
+| `ViewModel never exposes public mutable flows` | Conventions |
+| `Compose previews are private and end with Preview` | Conventions |
 
 ### `TestCoverageRulesTest`
 
-| Teste | Exigência |
+| Test | Requirement |
 |---|---|
-| `every use case has a test` | `<Nome>UseCase` e `<Nome>UseCaseImpl` têm `<Nome>Test` |
-| `every ViewModel has a test` | `<Nome>ViewModel` tem `<Nome>ViewModelTest` |
+| `every use case has a test` | `<Name>UseCase` and `<Name>UseCaseImpl` have a `<Name>Test` |
+| `every ViewModel has a test` | `<Name>ViewModel` has a `<Name>ViewModelTest` |
 
 ### `UiStringRulesTest`
 
-| Teste | Exigência |
+| Test | Requirement |
 |---|---|
-| `composables never show hardcoded text - everything comes from string resources` | Todo texto visível vem de `strings.xml` |
+| `composables never show hardcoded text - everything comes from string resources` | Every visible text comes from `strings.xml` |
 
-## 3. Outras verificações
+## 3. Other checks
 
-| Verificação | Onde |
+| Check | Where |
 |---|---|
-| Todo ViewModel instanciável pelo grafo Dagger real | `DependencyGraphTest` (`:app`) |
-| Screenshots sem regressão | `verifyRoborazziDebug` |
-| Links da documentação e frontmatter das skills | `scripts/check-docs.py` |
-| Nenhum segredo no commit | `scripts/git-hooks/pre-commit` |
+| Every ViewModel can be created by the real Dagger graph | `DependencyGraphTest` (`:app`) |
+| No screenshot regressions | `verifyRoborazziDebug` |
+| Documentation links and skills' frontmatter | `scripts/check-docs.py` |
+| No secrets in commits | `scripts/git-hooks/pre-commit` |
 
-## Mudando uma regra
+## Changing a rule
 
-1. Escreva uma ADR nova em `docs/decisions/` explicando o porquê.
-2. Altere o teste ou a regra do grafo e esta tabela no mesmo PR.
-3. Atualize o `AGENTS.md` afetado.
+1. Write a new ADR in `docs/decisions/` explaining why.
+2. Change the test or the graph rule and this table in the same PR.
+3. Update the affected `AGENTS.md`.

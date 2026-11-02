@@ -1,37 +1,37 @@
 # app/ — composition root
 
-Complementa o [AGENTS.md da raiz](../AGENTS.md).
+Complements the [root AGENTS.md](../AGENTS.md).
 
-O `:app` só monta o grafo e a navegação. Não tem regra de negócio, não chama repositório e não tem tela de feature.
+`:app` only builds the graph and the navigation. It has no business rules, never calls a repository and holds no feature screens.
 
-## Onde fica cada coisa
+## Where things live
 
-| Arquivo | Papel |
+| File | Role |
 |---|---|
-| `di/AppComponent.kt` | `@Singleton @Component` com os módulos de core e um `<Feature>DataModule` por feature |
-| `di/ViewModelComponent.kt` | `@Subcomponent` por ViewModel (recebe `SavedStateHandle`) com um `<Feature>PresentationModule` por feature |
-| `navigation/MoviesNavHost.kt` | Registra as extensões `NavGraphBuilder.<tela>Screen()` das features |
-| `navigation/TopLevelDestination.kt` | Abas da bottom bar |
-| `navigation/MoviesApp.kt` | `Scaffold` com `NavigationBar` e insets |
-| `MoviesApplication.kt` | Cria o `AppComponent` e instala o App Check |
-| `src/debug`, `src/release` | Variações por build type (Logcat tracker, `DebugOverlay`), sem `if (BuildConfig.DEBUG)` |
+| `di/AppComponent.kt` | `@Singleton @Component` with the core modules and one `<Feature>DataModule` per feature |
+| `di/ViewModelComponent.kt` | `@Subcomponent` per ViewModel (receives `SavedStateHandle`) with one `<Feature>PresentationModule` per feature |
+| `navigation/MoviesNavHost.kt` | Registers the features' `NavGraphBuilder.<screen>Screen()` extensions |
+| `navigation/TopLevelDestination.kt` | Bottom bar tabs |
+| `navigation/MoviesApp.kt` | `Scaffold` with `NavigationBar` and insets |
+| `MoviesApplication.kt` | Creates the `AppComponent` and installs App Check |
+| `src/debug`, `src/release` | Build type variations (Logcat tracker, `DebugOverlay`), without `if (BuildConfig.DEBUG)` |
 
-## Ao adicionar uma feature
+## When adding a feature
 
-1. `implementation(projects.feature.<nome>.presentation)` e `implementation(projects.feature.<nome>.data)` em `app/build.gradle.kts`.
-2. `<Nome>DataModule::class` em `AppComponent.modules`.
-3. `<Nome>PresentationModule::class` em `ViewModelComponent.modules`.
-4. `<tela>Screen(...)` no `MoviesNavHost`; se for aba, entrada em `TopLevelDestination`.
-5. ViewModel novo no `DependencyGraphTest` (`src/test/.../di/`).
+1. `implementation(projects.feature.<name>.presentation)` and `implementation(projects.feature.<name>.data)` in `app/build.gradle.kts`.
+2. `<Name>DataModule::class` in `AppComponent.modules`.
+3. `<Name>PresentationModule::class` in `ViewModelComponent.modules`.
+4. `<screen>Screen(...)` in `MoviesNavHost`; for a tab, an entry in `TopLevelDestination`.
+5. The new ViewModel in `DependencyGraphTest` (`src/test/.../di/`).
 
-## Não fazer
+## Don't
 
-- Importar classes `internal` de outros módulos ou chamar repositórios daqui.
-- Versionar `google-services.json`. Os plugins `google-services` e `crashlytics` só são aplicados quando o arquivo existe.
-- Usar Hilt ou anotações de agregação automática (ADR-0009).
+- Import `internal` classes from other modules or call repositories from here.
+- Commit `google-services.json`. The `google-services` and `crashlytics` plugins are only applied when the file exists.
+- Use Hilt or automatic aggregation annotations (ADR-0009).
 
-## Testes
+## Tests
 
-- `DependencyGraphTest` (Robolectric): todo ViewModel instanciável pelo grafo real.
+- `DependencyGraphTest` (Robolectric): every ViewModel can be created by the real graph.
 - `MainActivityViewModelTest`.
-- `src/androidTest`: E2E de navegação com Orchestrator (`./gradlew connectedDebugAndroidTest`).
+- `src/androidTest`: end-to-end navigation with Orchestrator (`./gradlew connectedDebugAndroidTest`).

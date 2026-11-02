@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0012 — Módulo core:di para ViewModels
+# 0012 — core:di module for ViewModels
 
-## Contexto e problema
+## Context and problem statement
 
-Sem Hilt, as `presentation` precisam obter ViewModels do Dagger sem conhecer o `:app`.
+Without Hilt, presentation modules must get ViewModels from Dagger without knowing `:app`.
 
-## Opções consideradas
+## Considered options
 
-* `core:di` com `ViewModelKey`, `DaggerViewModelFactory` e `daggerViewModel()`
-* Factory por feature
+* `core:di` with `ViewModelKey`, `DaggerViewModelFactory` and `daggerViewModel()`
+* A factory per feature
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Módulo `core:di` com a infraestrutura de ViewModel, porque é o equivalente ao que o Hilt daria pronto, sem duplicação.
+Chosen option: A `core:di` module with the ViewModel infrastructure, because it is the equivalent of what Hilt provides out of the box, without duplication.
 
-### Consequências
+### Consequences
 
-* Bom: Uma linha por tela: `viewModel: XViewModel = daggerViewModel()`
-* Ruim: Mais um módulo core
+* Good: One line per screen: `viewModel: XViewModel = daggerViewModel()`
+* Bad: One more core module
 
-### Confirmação
+### Confirmation
 
 `DependencyGraphTest`.

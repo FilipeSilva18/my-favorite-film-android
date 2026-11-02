@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0005 — Feature nunca depende de outra feature
+# 0005 — Features never depend on other features
 
-## Contexto e problema
+## Context and problem statement
 
-Dependências laterais entre features criam ciclos e acoplamento que impedem evoluir uma feature isoladamente.
+Lateral dependencies between features create cycles and coupling that prevent evolving a feature in isolation.
 
-## Opções consideradas
+## Considered options
 
-* Proibir dependência entre features; o compartilhado sobe para `core`
-* Permitir dependências pontuais
+* Forbid dependencies between features; shared code moves to `core`
+* Allow occasional dependencies
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Feature não depende de feature; o que é compartilhado sobe para `core` (com a exceção controlada da ADR-0017), porque evita acoplamento lateral e ciclos.
+Chosen option: Features don't depend on features; shared code moves to `core` (with the controlled exception of ADR-0017), because it avoids lateral coupling and cycles.
 
-### Consequências
+### Consequences
 
-* Bom: Features evoluem e são removidas isoladamente
-* Ruim: `core` pode crescer demais se tudo subir sem critério (ver ADR-0017)
+* Good: Features evolve and can be removed in isolation
+* Bad: `core` can grow too much if everything moves there without criteria (see ADR-0017)
 
-### Confirmação
+### Confirmation
 
-module-graph-assert: regras `:feature:x:.* -X> :feature:y:.*`; Konsist: `a feature only reaches another feature through its public api module (ADR-05)`.
+module-graph-assert: `:feature:x:.* -X> :feature:y:.*` rules; Konsist: `a feature only reaches another feature through its public api module (ADR-05)`.

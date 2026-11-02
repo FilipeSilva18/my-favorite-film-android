@@ -1,73 +1,73 @@
 # AGENTS.md
 
-Instruções para agentes de IA e para pessoas que trabalham neste repositório. Formato aberto [AGENTS.md](https://agents.md): vale para qualquer assistente. O `AGENTS.md` mais próximo do arquivo editado complementa este; um pedido explícito do usuário tem prioridade sobre os dois.
+Instructions for AI agents and people working in this repository. Open [AGENTS.md](https://agents.md) format: it applies to any assistant. The `AGENTS.md` closest to the file being edited complements this one; an explicit request from the user takes precedence over both.
 
-## Projeto
+## Project
 
-**MyFavoriteFilms** (`com.faas.myfavoritefilms`): app Android de filmes sobre a API da TMDB.
+**MyFavoriteFilms** (`com.faas.myfavoritefilms`): Android movie app on top of the TMDB API.
 
-- Kotlin 2.4, Jetpack Compose (Material 3, single Activity), Navigation Compose type-safe.
-- Clean Architecture sobre o guia oficial do Google: `presentation` → `domain` ← `data`.
-- Monorepo com 27 módulos Gradle: `:app`, 14 em `core/`, 11 em `feature/`, `:architecture-test`.
-- DI com **Dagger 2 puro** (sem Hilt), KSP. Paging 3, Room, DataStore, Retrofit 3, Coil 3.
-- Firebase: Analytics, Crashlytics, AI Logic (Gemini) e App Check, sempre atrás de contratos em `core`.
+- Kotlin 2.4, Jetpack Compose (Material 3, single Activity), type-safe Navigation Compose.
+- Clean Architecture on top of Google's official guide: `presentation` → `domain` ← `data`.
+- Monorepo with 27 Gradle modules: `:app`, 14 in `core/`, 11 in `feature/`, `:architecture-test`.
+- DI with **pure Dagger 2** (no Hilt), KSP. Paging 3, Room, DataStore, Retrofit 3, Coil 3.
+- Firebase: Analytics, Crashlytics, AI Logic (Gemini) and App Check, always behind contracts in `core`.
 
-## Mapa
+## Map
 
-| Caminho | O que é | Instruções |
+| Path | What it is | Instructions |
 |---|---|---|
 | `app/` | Composition root: `AppComponent`, `ViewModelComponent`, `MoviesNavHost`, bottom bar | [app/AGENTS.md](app/AGENTS.md) |
-| `core/` | Infra e regras transversais (rede, banco, DataStore, design system, SDUI, analytics, IA) | [core/AGENTS.md](core/AGENTS.md) |
-| `feature/` | `movies`, `moviedetail`, `favorites` (com `api`), `settings` | [feature/AGENTS.md](feature/AGENTS.md) |
-| `build-logic/` | Convention plugins `movies.*` | [build-logic/AGENTS.md](build-logic/AGENTS.md) |
-| `architecture-test/` | Regras de arquitetura executáveis (Konsist) | [architecture-test/AGENTS.md](architecture-test/AGENTS.md) |
-| `docs/` | Documentação (Diátaxis) e ADRs (MADR) | [docs/README.md](docs/README.md) |
-| `.agents/skills/` | Skills de agente (padrão aberto Agent Skills) | [docs/how-to/use-ai-agents.md](docs/how-to/use-ai-agents.md) |
-| `scripts/` | Verificação local e git hooks | [docs/reference/commands.md](docs/reference/commands.md) |
-| `ARCHITECTURE.md` | Documento de arquitetura completo, com trechos de código | — |
+| `core/` | Infrastructure and cross-cutting rules (network, database, DataStore, design system, SDUI, analytics, AI) | [core/AGENTS.md](core/AGENTS.md) |
+| `feature/` | `movies`, `moviedetail`, `favorites` (with `api`), `settings` | [feature/AGENTS.md](feature/AGENTS.md) |
+| `build-logic/` | `movies.*` convention plugins | [build-logic/AGENTS.md](build-logic/AGENTS.md) |
+| `architecture-test/` | Executable architecture rules (Konsist) | [architecture-test/AGENTS.md](architecture-test/AGENTS.md) |
+| `docs/` | Documentation (Diátaxis) and ADRs (MADR) | [docs/README.md](docs/README.md) |
+| `.agents/skills/` | Agent skills (open Agent Skills standard) | [docs/how-to/use-ai-agents.md](docs/how-to/use-ai-agents.md) |
+| `scripts/` | Local verification and git hooks | [docs/reference/commands.md](docs/reference/commands.md) |
+| `ARCHITECTURE.md` | Complete architecture document, with code excerpts | — |
 
-## Comandos
+## Commands
 
 ```bash
-./scripts/verify.sh                         # tudo que o CI de JVM roda: grafo, Konsist, testes, screenshots, lint
+./scripts/verify.sh                         # everything the JVM CI job runs: graph, Konsist, tests, screenshots, lint
 ./scripts/verify-module.sh :feature:movies:presentation
-./gradlew assertModuleGraph                 # regras do grafo de módulos
-./gradlew :architecture-test:unitTest       # regras Konsist
-./gradlew unitTest                          # todos os testes JVM (unit, integração, Compose, DI)
-./scripts/record-screenshots.sh             # regrava referências Roborazzi (revise e versione os PNGs)
+./gradlew assertModuleGraph                 # module graph rules
+./gradlew :architecture-test:unitTest       # Konsist rules
+./gradlew unitTest                          # every JVM test (unit, integration, Compose, DI)
+./scripts/record-screenshots.sh             # re-record Roborazzi references (review and commit the PNGs)
 ./gradlew :app:assembleDebug
 ```
 
-Use JDK 21. Sem `TMDB_ACCESS_TOKEN` em `local.properties` o app compila, mas a TMDB responde 401.
+Use JDK 21. Without `TMDB_ACCESS_TOKEN` in `local.properties` the app builds, but TMDB answers 401.
 
-## Regras inegociáveis
+## Non-negotiable rules
 
-1. **Segredos nunca entram no Git.** O token da TMDB fica só em `local.properties` (ignorado) ou no secret `TMDB_ACCESS_TOKEN` do CI. `app/google-services.json` é ignorado e vem do secret `GOOGLE_SERVICES_JSON`. O token de debug do App Check nunca é versionado. Rode `./scripts/install-git-hooks.sh` uma vez.
-2. **Camadas:** `domain` é Kotlin puro (JVM) e define as interfaces; `data` implementa; `presentation` só fala com use cases. ViewModel nunca recebe repositório.
-3. **Feature não depende de feature.** A única exceção é o módulo `:api` de uma feature consumida por outras (hoje `:feature:favorites:api`). O que duas features usam sobe para `core`.
-4. **Repositório depende de data source**, nunca de DAO ou de API Retrofit (`<Tipo>LocalDataSource`/`<Tipo>RemoteDataSource` em `data/datasource`, `internal`).
-5. **Implementações são `internal`.** Módulos Dagger em par: `object XxxModule` público que inclui o `internal interface XxxBindsModule`.
-6. **Firebase só em `core:analytics-firebase` e `core:ai-firebase`.** Features usam `Analytics`, `ErrorReporter` e `AiJsonGenerator`.
-7. **Nenhum texto de UI fixo no código.** Tudo em `strings.xml` (`values/` pt-BR e `values-en/`), inclusive `contentDescription`.
-8. **Código sem comentários explicativos.** O porquê vai para `docs/decisions/` ou `ARCHITECTURE.md`.
-9. **Código, testes e CI em inglês; documentação em português.** Testes JVM com nomes entre crases; instrumentados em camelCase.
-10. **Fakes, nunca mocks.** Fakes compartilhados ficam em `core:testing` ou em `testFixtures`.
+1. **Secrets never go into Git.** The TMDB token lives only in `local.properties` (ignored) or in the `TMDB_ACCESS_TOKEN` CI secret. `app/google-services.json` is ignored and comes from the `GOOGLE_SERVICES_JSON` secret. The App Check debug token is never committed. Run `./scripts/install-git-hooks.sh` once.
+2. **Layers:** `domain` is pure Kotlin (JVM) and defines the interfaces; `data` implements them; `presentation` only talks to use cases. A ViewModel never receives a repository.
+3. **Features do not depend on features.** The only exception is the `:api` module of a feature consumed by others (today `:feature:favorites:api`). What two features share moves to `core`.
+4. **Repositories depend on data sources**, never on a DAO or a Retrofit API (`<Type>LocalDataSource`/`<Type>RemoteDataSource` in `data/datasource`, `internal`).
+5. **Implementations are `internal`.** Dagger modules come in pairs: a public `object XxxModule` that includes an `internal interface XxxBindsModule`.
+6. **Firebase only in `core:analytics-firebase` and `core:ai-firebase`.** Features use `Analytics`, `ErrorReporter` and `AiJsonGenerator`.
+7. **No hardcoded UI text.** Everything comes from `strings.xml` (`values/` pt-BR and `values-en/`), including `contentDescription`.
+8. **No explanatory comments in code.** The reasoning goes to `docs/decisions/` or `ARCHITECTURE.md`.
+9. **Everything in English:** code, tests, CI and documentation. JVM test names in backticks; instrumented tests in camelCase.
+10. **Fakes, never mocks.** Shared fakes live in `core:testing` or in `testFixtures`.
 
-As regras 2 a 7 são verificadas por `assertModuleGraph` e pelo Konsist. Se uma delas falhar, corrija o código; não afrouxe a regra sem uma ADR nova.
+Rules 2 to 7 are checked by `assertModuleGraph` and Konsist. If one fails, fix the code; do not relax the rule without a new ADR.
 
-## Definição de pronto
+## Definition of done
 
-- [ ] `./scripts/verify.sh` passa.
-- [ ] Todo `UseCase`, `UseCaseImpl` e `ViewModel` novo tem `<Nome>Test` (o Konsist cobra).
-- [ ] Tela nova tem `<Tela>ContentTest` e `<Tela>ScreenshotTest`; PNGs regravados e revisados.
-- [ ] ViewModel novo registrado no `DependencyGraphTest` do `:app`.
-- [ ] Strings novas em `values/` e `values-en/`.
-- [ ] Decisão nova ou alterada registrada em `docs/decisions/` e refletida no `ARCHITECTURE.md`.
-- [ ] Nenhum segredo, `local.properties` ou `google-services.json` no diff.
+- [ ] `./scripts/verify.sh` passes.
+- [ ] Every new `UseCase`, `UseCaseImpl` and `ViewModel` has a `<Name>Test` (Konsist enforces it).
+- [ ] New screens have `<Screen>ContentTest` and `<Screen>ScreenshotTest`; PNGs re-recorded and reviewed.
+- [ ] New ViewModels registered in the `:app` `DependencyGraphTest`.
+- [ ] New strings in `values/` and `values-en/`.
+- [ ] New or changed decisions recorded in `docs/decisions/` and reflected in `ARCHITECTURE.md`.
+- [ ] No secret, `local.properties` or `google-services.json` in the diff.
 
-## Como trabalhar aqui
+## How to work here
 
-- Antes de criar UI, procure em `core:ui` e `core:designsystem` (`MovieCard`, `MovieGrid`, `LoadingContent`, `ErrorContent`, `EmptyContent`, `SearchField`, `sduiItems`).
-- Copie o padrão de uma feature existente em vez de inventar um novo. `movies` é a referência completa; `favorites` é a referência de módulo `api`.
-- Tarefas recorrentes têm skills em `.agents/skills/`: `feature-builder`, `data-integrator`, `compose-ui`, `sdui-designer`, `test-engineer`, `architecture-guardian`, `docs-keeper`.
-- Quando o código e a documentação divergirem, o código é a fonte da verdade; atualize a documentação no mesmo PR.
+- Before creating UI, look in `core:ui` and `core:designsystem` (`MovieCard`, `MovieGrid`, `LoadingContent`, `ErrorContent`, `EmptyContent`, `SearchField`, `sduiItems`).
+- Copy the pattern of an existing feature instead of inventing a new one. `movies` is the complete reference; `favorites` is the reference for an `api` module.
+- Recurring tasks have skills in `.agents/skills/`: `feature-builder`, `data-integrator`, `compose-ui`, `sdui-designer`, `test-engineer`, `architecture-guardian`, `docs-keeper`.
+- When code and documentation disagree, the code is the source of truth; update the documentation in the same PR.

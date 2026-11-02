@@ -1,32 +1,32 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0009 — Dagger 2 puro, sem Hilt
+# 0009 — Pure Dagger 2, no Hilt
 
-## Contexto e problema
+## Context and problem statement
 
-Queremos o grafo de dependências explícito e didático, com escopos e subcomponentes visíveis.
+We want the dependency graph explicit and readable, with visible scopes and subcomponents.
 
-## Opções consideradas
+## Considered options
 
-* Dagger 2 puro com KSP
+* Pure Dagger 2 with KSP
 * Hilt
 * Koin
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: Dagger 2 puro: `AppComponent` raiz + `ViewModelComponent` por ViewModel com `SavedStateHandle`, porque controle total do grafo, verificado em compilação, sem geração agregada escondida.
+Chosen option: Pure Dagger 2: a root `AppComponent` + a `ViewModelComponent` per ViewModel with `SavedStateHandle`, because full control of the graph, verified at compile time, without hidden aggregated generation.
 
-### Consequências
+### Consequences
 
-* Bom: Erros de grafo em tempo de compilação
-* Bom: Grafo legível em dois arquivos do `:app`
-* Ruim: `api(...)` extras para o KSP do `:app` enxergar tipos (ARCHITECTURE.md 12.8)
-* Ruim: Mais código que Hilt
+* Good: Graph errors at compile time
+* Good: Graph readable in two `:app` files
+* Bad: Extra `api(...)` dependencies so `:app`'s KSP can see types (ARCHITECTURE.md 12.8)
+* Bad: More code than Hilt
 
-### Confirmação
+### Confirmation
 
-`DependencyGraphTest` instancia todos os ViewModels pelo grafo real.
+`DependencyGraphTest` creates every ViewModel through the real graph.

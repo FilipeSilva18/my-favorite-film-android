@@ -1,29 +1,29 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0014 — Server-Driven UI genérico no core
+# 0014 — Generic server-driven UI in core
 
-## Contexto e problema
+## Context and problem statement
 
-O detalhe do filme tem blocos cuja ordem e conteúdo o servidor decide, e outras telas podem querer o mesmo.
+The movie detail has blocks whose order and content are decided by the server, and other screens may want the same.
 
-## Opções consideradas
+## Considered options
 
-* Modelo em `core:common`, parser em `core:network`, renderer em `core:ui`
-* SDUI dentro da feature
+* Model in `core:common`, parser in `core:network`, renderer in `core:ui`
+* SDUI inside the feature
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: SDUI genérico no core; features só produzem e consomem `List<SduiComponent>`, porque qualquer tela reutiliza parser e renderer; tipos desconhecidos são ignorados.
+Chosen option: Generic SDUI in the core; features only produce and consume `List<SduiComponent>`, because any screen reuses the parser and the renderer; unknown types are ignored.
 
-### Consequências
+### Consequences
 
-* Bom: Backend evolui antes do app sem quebrar versões antigas
-* Ruim: Vocabulário de blocos precisa de governança (guia `add-sdui-block`)
+* Good: The backend evolves ahead of the app without breaking old versions
+* Bad: The block vocabulary needs governance (`add-sdui-block` guide)
 
-### Confirmação
+### Confirmation
 
 `SduiParserTest`, `SduiRendererTest`.

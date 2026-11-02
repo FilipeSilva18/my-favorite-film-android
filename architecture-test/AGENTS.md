@@ -1,20 +1,20 @@
-# architecture-test/ — regras executáveis
+# architecture-test/ — executable rules
 
-Complementa o [AGENTS.md da raiz](../AGENTS.md). Lista completa: [docs/reference/architecture-rules.md](../docs/reference/architecture-rules.md).
+Complements the [root AGENTS.md](../AGENTS.md). Full list: [docs/reference/architecture-rules.md](../docs/reference/architecture-rules.md).
 
-Testes [Konsist](https://docs.konsist.lemonappdev.com) que leem o código-fonte de todos os módulos e falham quando uma regra da arquitetura é quebrada. Complementam o `assertModuleGraph` (que vê dependências entre módulos) olhando imports, pacotes, nomes e visibilidade.
+[Konsist](https://docs.konsist.lemonappdev.com) tests that read the source code of every module and fail when an architecture rule is broken. They complement `assertModuleGraph` (which sees dependencies between modules) by looking at imports, packages, names and visibility.
 
-| Arquivo | Cobre |
+| File | Covers |
 |---|---|
-| `LayerRulesTest` | Pureza dos módulos JVM, presentation sem data, feature só via `.api.`, Firebase isolado, IA só pelo contrato |
-| `NamingAndVisibilityRulesTest` | Pacotes e nomes de use case, repositório, data source, DTO, ViewModel, previews |
-| `TestCoverageRulesTest` | Todo `UseCase`, `UseCaseImpl` e `ViewModel` tem `<Nome>Test` |
-| `UiStringRulesTest` | Nenhum texto literal em `@Composable` |
-| `KonsistScopes` | Escopos compartilhados e o pacote base |
+| `LayerRulesTest` | Purity of JVM modules, presentation without data, features only through `.api.`, isolated Firebase, AI only through the contract |
+| `NamingAndVisibilityRulesTest` | Packages and names of use cases, repositories, data sources, DTOs, ViewModels, previews |
+| `TestCoverageRulesTest` | Every `UseCase`, `UseCaseImpl` and `ViewModel` has a `<Name>Test` |
+| `UiStringRulesTest` | No literal text in a `@Composable` |
+| `KonsistScopes` | Shared scopes and the base package |
 
-## Regras
+## Rules
 
-- Quando uma regra falhar, corrija o código. Mudar ou relaxar uma regra exige uma ADR em `docs/decisions/`.
-- Regra nova: um teste por regra, nome em inglês entre crases descrevendo o comportamento esperado, e uma linha em `docs/reference/architecture-rules.md`.
-- Ao criar uma feature, adicione o nome em `FEATURES` (`KonsistScopes.kt`).
-- Rode com `./gradlew :architecture-test:unitTest`.
+- When a rule fails, fix the code. Changing or relaxing a rule requires an ADR in `docs/decisions/`.
+- New rule: one test per rule, named in English in backticks describing the expected behavior, and a row in `docs/reference/architecture-rules.md`.
+- When creating a feature, add its name to `FEATURES` (`KonsistScopes.kt`).
+- Run with `./gradlew :architecture-test:unitTest`.

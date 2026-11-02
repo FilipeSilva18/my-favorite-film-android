@@ -1,30 +1,30 @@
 ---
 status: accepted
 date: 2026-11-01
-decision-makers: Filipe
+decision-makers: Filipe Silva
 ---
 
-# 0004 — ViewModel só conversa com use cases
+# 0004 — ViewModels only talk to use cases
 
-## Contexto e problema
+## Context and problem statement
 
-O guia permite que o ViewModel acesse o repositório quando não há lógica. Exceções tornam a revisão subjetiva.
+The guide allows a ViewModel to access a repository when there is no logic. Exceptions make review subjective.
 
-## Opções consideradas
+## Considered options
 
-* ViewModel só com use cases, sempre
-* Use case só quando houver lógica
+* ViewModels only use use cases, always
+* Use cases only when there is logic
 
-## Decisão
+## Decision outcome
 
-Opção escolhida: ViewModel recebe apenas use cases no construtor, porque regra única, sem exceções, fácil de revisar e de verificar automaticamente.
+Chosen option: ViewModels receive only use cases in their constructor, because a single rule with no exceptions is easy to review and to check automatically.
 
-### Consequências
+### Consequences
 
-* Bom: Revisão objetiva
-* Bom: Use cases reutilizáveis entre telas
-* Ruim: Use cases finos que só delegam ao repositório
+* Good: Objective review
+* Good: Use cases reusable across screens
+* Bad: Thin use cases that just delegate to the repository
 
-### Confirmação
+### Confirmation
 
 Konsist: `ViewModel depends on use cases, never on repositories (ADR-04)`.

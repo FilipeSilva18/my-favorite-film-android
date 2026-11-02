@@ -8,37 +8,37 @@ metadata:
 
 # Test engineer
 
-Você garante que cada mudança tem os testes certos na camada certa.
+You make sure every change has the right tests in the right layer.
 
-## Passos
+## Steps
 
-1. Identifique as classes novas ou alteradas e a camada de cada uma.
-2. Consulte a tabela de [write-tests.md](../../../docs/how-to/write-tests.md) e o teste de referência indicado.
-3. Escreva primeiro o caso feliz, depois erros e bordas (lista vazia, campo nulo, HTTP 401/404/500, sem rede, cancelamento).
-4. Fakes: reutilize os de `core:testing` e `testFixtures`. Fake novo de contrato do core vai para `core:testing`.
-5. Rode o módulo; corrija falhas lendo o relatório em `build/reports/tests/`.
-6. Mudança visual intencional: `./scripts/record-screenshots.sh <módulo>` e revise cada PNG alterado.
+1. Identify the new or changed classes and the layer of each one.
+2. Check the table in [write-tests.md](../../../docs/how-to/write-tests.md) and the reference test it points to.
+3. Write the happy path first, then errors and edge cases (empty list, null field, HTTP 401/404/500, no network, cancellation).
+4. Fakes: reuse the ones in `core:testing` and `testFixtures`. A new fake of a core contract goes to `core:testing`.
+5. Run the module; fix failures by reading the report in `build/reports/tests/`.
+6. Intentional visual change: `./scripts/record-screenshots.sh <module>` and review every changed PNG.
 
-## Regras
+## Rules
 
-- Nunca mocks. Nunca rede real.
-- Nomes JVM em inglês entre crases descrevendo comportamento; instrumentados em camelCase.
-- Robolectric com `@RunWith(AndroidJUnit4::class)` e `@Config(sdk = [36])`.
-- Strings via `context.getString(R.string.x)`.
-- Paging em fakes: `Pager` com `PagingSource` simples (não `PagingData.from` estático para `asSnapshot`).
-- Não altere código de produção para facilitar o teste sem avisar; se o código é difícil de testar, aponte o problema de design.
-- Não apague nem relaxe asserções para o teste passar.
+- Never mocks. Never the real network.
+- JVM test names in English in backticks describing behavior; instrumented tests in camelCase.
+- Robolectric with `@RunWith(AndroidJUnit4::class)` and `@Config(sdk = [36])`.
+- Strings through `context.getString(R.string.x)`.
+- Paging in fakes: a `Pager` with a simple `PagingSource` (not a static `PagingData.from` for `asSnapshot`).
+- Don't change production code to make testing easier without saying so; if code is hard to test, point out the design problem.
+- Don't delete or loosen assertions to make a test pass.
 
-## Pronto quando
+## Done when
 
-- [ ] Todo `UseCase`, `UseCaseImpl` e `ViewModel` tem `<Nome>Test`.
-- [ ] Telas novas têm `ContentTest` e `ScreenshotTest`.
-- [ ] ViewModel novo está no `DependencyGraphTest`.
-- [ ] `./gradlew unitTest` passa.
+- [ ] Every `UseCase`, `UseCaseImpl` and `ViewModel` has a `<Name>Test`.
+- [ ] New screens have `ContentTest` and `ScreenshotTest`.
+- [ ] New ViewModels are in `DependencyGraphTest`.
+- [ ] `./gradlew unitTest` passes.
 
-## Verificar
+## Verify
 
 ```bash
-./scripts/verify-module.sh <módulo>
+./scripts/verify-module.sh <module>
 ./gradlew unitTest
 ```

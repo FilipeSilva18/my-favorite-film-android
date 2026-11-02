@@ -1,33 +1,34 @@
-# Documentação
+# Documentation
 
-Organizada pelo framework [Diátaxis](https://diataxis.fr): cada documento tem um único propósito. Escrita para pessoas e para agentes de IA; nenhum documento depende de uma ferramenta específica.
+Organized with the [Diátaxis](https://diataxis.fr) framework: each document has a single purpose. Written for people and AI agents alike; no document depends on a specific tool.
 
-| Tipo | Para quê | Documentos |
+| Type | Purpose | Documents |
 |---|---|---|
-| **Tutorial** | Aprender fazendo, do zero | [Onboarding](tutorials/onboarding.md) |
-| **How-to** | Resolver uma tarefa concreta | [Nova feature](how-to/add-feature.md) · [Novo endpoint da TMDB](how-to/add-endpoint.md) · [Novo bloco SDUI](how-to/add-sdui-block.md) · [Novo evento de analytics](how-to/add-analytics-event.md) · [Escrever testes](how-to/write-tests.md) · [Registrar uma ADR](how-to/write-adr.md) · [Usar os agentes de IA](how-to/use-ai-agents.md) |
-| **Referência** | Consultar fatos | [Módulos](reference/modules.md) · [Comandos](reference/commands.md) · [Regras de arquitetura](reference/architecture-rules.md) · [Convenções de código](reference/conventions.md) |
-| **Explicação** | Entender o porquê | [Arquitetura em diagramas](explanation/architecture.md) · [IA de agentes no repositório](explanation/ai-agents.md) · [ADRs](decisions/README.md) |
+| **Tutorial** | Learn by doing, from scratch | [Onboarding](tutorials/onboarding.md) |
+| **How-to** | Solve a concrete task | [New feature](how-to/add-feature.md) · [New TMDB endpoint](how-to/add-endpoint.md) · [New SDUI block](how-to/add-sdui-block.md) · [New analytics event](how-to/add-analytics-event.md) · [Write tests](how-to/write-tests.md) · [Record an ADR](how-to/write-adr.md) · [Use AI agents](how-to/use-ai-agents.md) |
+| **Reference** | Look up facts | [Modules](reference/modules.md) · [Commands](reference/commands.md) · [Architecture rules](reference/architecture-rules.md) · [Code conventions](reference/conventions.md) |
+| **Explanation** | Understand the why | [Architecture in diagrams](explanation/architecture.md) · [AI agents in this repository](explanation/ai-agents.md) · [ADRs](decisions/README.md) |
 
-Documentos fora desta pasta:
+Documents outside this folder:
 
-- [`AGENTS.md`](../AGENTS.md) na raiz e em `app/`, `core/`, `feature/`, `build-logic/`, `architecture-test/`: instruções curtas que os agentes leem sozinhos.
-- [`ARCHITECTURE.md`](../ARCHITECTURE.md): documento de arquitetura completo, com contratos e trechos de código.
-- [`feature/README.md`](../feature/README.md): checklist de nova feature.
-- [`.agents/skills/`](../.agents/skills): skills de agente no padrão aberto Agent Skills.
+- [`README.md`](../README.md): project overview.
+- [`AGENTS.md`](../AGENTS.md) at the root and in `app/`, `core/`, `feature/`, `build-logic/`, `architecture-test/`: short instructions that agents read automatically.
+- [`ARCHITECTURE.md`](../ARCHITECTURE.md): complete architecture document, with contracts and code excerpts.
+- [`feature/README.md`](../feature/README.md): new feature checklist.
+- [`.agents/skills/`](../.agents/skills): agent skills in the open Agent Skills format.
 
-## Padrões adotados
+## Standards in use
 
-| Padrão | Onde | Por quê |
+| Standard | Where | Why |
 |---|---|---|
-| [AGENTS.md](https://agents.md) | `AGENTS.md` aninhados | Formato aberto mantido pela Agentic AI Foundation (Linux Foundation), lido por Android Studio (Gemini), Codex, Copilot, Cursor, Gemini CLI e outros |
-| [Agent Skills](https://agentskills.io) | `.agents/skills/<nome>/SKILL.md` | Padrão aberto de instruções sob demanda; `.agents/skills` é o diretório lido pelo Android Studio e pelo Codex |
-| [MADR 4](https://adr.github.io/madr/) | `docs/decisions/` | Formato enxuto e difundido de ADR, com seção de confirmação |
-| [Diátaxis](https://diataxis.fr) | `docs/` | Separa tutorial, how-to, referência e explicação |
-| [Mermaid](https://mermaid.js.org) | Diagramas | Renderiza no GitHub e no Android Studio, versionável como texto |
+| [AGENTS.md](https://agents.md) | Nested `AGENTS.md` files | Open format maintained by the Agentic AI Foundation (Linux Foundation), read by Android Studio (Gemini), Codex, Copilot, Cursor, Gemini CLI and others |
+| [Agent Skills](https://agentskills.io) | `.agents/skills/<name>/SKILL.md` | Open standard for on-demand instructions; `.agents/skills` is the directory read by Android Studio and Codex |
+| [MADR 4](https://adr.github.io/madr/) | `docs/decisions/` | Lean, widely used ADR format with a confirmation section |
+| [Diátaxis](https://diataxis.fr) | `docs/` | Separates tutorial, how-to, reference and explanation |
+| [Mermaid](https://mermaid.js.org) | Diagrams | Renders on GitHub and in Android Studio, versioned as text |
 
-## Manutenção
+## Maintenance
 
-- Código e documentação divergentes: o código é a fonte da verdade; corrija a documentação no mesmo PR.
-- `./scripts/check-docs.py` valida links relativos e o frontmatter das skills; roda no CI.
-- Agente responsável: skill [`docs-keeper`](../.agents/skills/docs-keeper/SKILL.md).
+- When code and documentation disagree, the code is the source of truth; fix the documentation in the same PR.
+- `./scripts/check-docs.py` validates relative links and the skills' frontmatter; it runs in CI.
+- Responsible agent: the [`docs-keeper`](../.agents/skills/docs-keeper/SKILL.md) skill.

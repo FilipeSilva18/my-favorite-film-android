@@ -1,23 +1,23 @@
-# Consumir um novo endpoint da TMDB
+# Consume a new TMDB endpoint
 
-Exemplo: `GET movie/{id}/reviews` numa feature existente. Contexto: ADR-0002, ADR-0013 e ADR-0018. Skill: [`data-integrator`](../../.agents/skills/data-integrator/SKILL.md).
+Example: `GET movie/{id}/reviews` in an existing feature. Context: ADR-0002, ADR-0013 and ADR-0018. Skill: [`data-integrator`](../../.agents/skills/data-integrator/SKILL.md).
 
-## Passos
+## Steps
 
 ### 1. Domain (`feature:<x>:domain`, JVM)
 
-- Modelo em `model/` (`data class` imutável, tipos do domínio, nada de `@SerialName`).
-- Método na interface `repository/<X>Repository`: `suspend fun ...(): AppResult<T>` para chamada única, `fun ...(): Flow<PagingData<T>>` para lista paginada.
-- Use case em `usecase/`, `@Inject constructor`, um `operator fun invoke` público.
+- Model in `model/` (immutable `data class`, domain types, no `@SerialName`).
+- Method in the `repository/<X>Repository` interface: `suspend fun ...(): AppResult<T>` for a single call, `fun ...(): Flow<PagingData<T>>` for a paged list.
+- Use case in `usecase/`, `@Inject constructor`, a single public `operator fun invoke`.
 
 ### 2. Data (`feature:<x>:data`)
 
-1. **Fixture:** salve uma resposta real (reduzida) em `src/test/resources/tmdb/<endpoint>.json`. Nunca inclua o token.
-2. **DTO** `internal` em `remote/dto/`, `@Serializable`, `@SerialName` para campos `snake_case`, campos opcionais com valor padrão.
-3. **API Retrofit** `internal` em `remote/api/`: `@GET("movie/{movie_id}/reviews") suspend fun ...`.
-4. **Data source** `internal` em `datasource/<X>RemoteDataSource`: um método por chamada, devolve DTO, sem mapear e sem tratar erro.
-5. **Mapper** em `mapper/`: `fun XDto.toDomain(): X`. Imagens via `TmdbImages`.
-6. **Repositório** `internal` em `repository/<X>RepositoryImpl`:
+1. **Fixture:** save a real (trimmed) response in `src/test/resources/tmdb/<endpoint>.json`. Never include the token.
+2. **DTO**, `internal`, in `remote/dto/`, `@Serializable`, `@SerialName` for `snake_case` fields, optional fields with default values.
+3. **Retrofit API**, `internal`, in `remote/api/`: `@GET("movie/{movie_id}/reviews") suspend fun ...`.
+4. **Data source**, `internal`, in `datasource/<X>RemoteDataSource`: one method per call, returns the DTO, no mapping and no error handling.
+5. **Mapper** in `mapper/`: `fun XDto.toDomain(): X`. Images through `TmdbImages`.
+6. **Repository**, `internal`, in `repository/<X>RepositoryImpl`:
    ```kotlin
    override suspend fun reviews(movieId: Int): AppResult<List<Review>> = safeApiCall(
        onFailure = { cause, error -> errorReporter.reportIfUnexpected(cause, error, origin = "movie_reviews") },
@@ -25,32 +25,32 @@ Exemplo: `GET movie/{id}/reviews` numa feature existente. Contexto: ADR-0002, AD
        remoteDataSource.reviews(movieId).results.map { it.toDomain() }
    }
    ```
-   Paginado: `Pager` com um `PagingSource` em `paging/` que chama o data source (veja `MoviesPagingSource`).
-7. **Dagger:** se a API é nova, `@Provides @Singleton` no módulo `internal` do `<X>DataModule`. Data sources com `@Inject constructor` não precisam de binding.
+   Paged: a `Pager` with a `PagingSource` in `paging/` that calls the data source (see `MoviesPagingSource`).
+7. **Dagger:** for a new API, a `@Provides @Singleton` in the `internal` module of `<X>DataModule`. Data sources with `@Inject constructor` need no binding.
 
-### 3. Testes
+### 3. Tests
 
-| Teste | Onde | Cobre |
+| Test | Where | Covers |
 |---|---|---|
-| `<UseCase>Test` | domain | Regra com `Fake<X>Repository` |
-| `<X>RepositoryImplTest` | data | MockWebServer + fixture real + `TmdbJson`: path, query, mapeamento, HTTP 401/404/500 → `DomainError` |
-| `<X>MapperTest` | data | Campos nulos, imagens, formatos |
+| `<UseCase>Test` | domain | Rule with `Fake<X>Repository` |
+| `<X>RepositoryImplTest` | data | MockWebServer + real fixture + `TmdbJson`: path, query, mapping, HTTP 401/404/500 → `DomainError` |
+| `<X>MapperTest` | data | Null fields, images, formats |
 
-### 4. Verificar
+### 4. Verify
 
 ```bash
 ./scripts/verify-module.sh :feature:<x>:data
 ./scripts/verify.sh --quick
 ```
 
-## Regras que o build cobra
+## Rules the build enforces
 
-- DTO e data source `internal` nos pacotes certos.
-- Repositório sem `Api` ou `Dao` no construtor.
-- Use case com teste.
+- DTOs and data sources are `internal` and in the right packages.
+- No `Api` or `Dao` in a repository constructor.
+- Every use case has a test.
 
-## Erros comuns
+## Common mistakes
 
-- Devolver DTO pelo repositório. O que sai do `data` é modelo de domínio.
-- Capturar `Exception` no data source. Erros são tratados uma vez, no `safeApiCall` do repositório.
-- Reportar 401, 404 ou falta de rede como não fatal. `reportIfUnexpected` já filtra; não chame `recordNonFatal` direto.
+- Returning a DTO from the repository. What leaves `data` is a domain model.
+- Catching `Exception` in the data source. Errors are handled once, in the repository's `safeApiCall`.
+- Reporting 401, 404 or no network as non-fatal. `reportIfUnexpected` already filters; don't call `recordNonFatal` directly.

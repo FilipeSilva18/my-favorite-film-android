@@ -1,48 +1,48 @@
 ---
-name: Especificação de feature
-about: Descreva uma feature de forma que uma pessoa ou um agente de IA consiga implementar sem perguntas
+name: Feature specification
+about: Describe a feature so that a person or an AI agent can implement it without questions
 title: "[feature] "
 labels: feature
 ---
 
-## Objetivo
+## Goal
 
-<!-- O que o usuário consegue fazer depois desta feature, em uma frase. -->
+<!-- What the user can do after this feature, in one sentence. -->
 
-## Formato
+## Shape
 
-- [ ] Feature nova (`domain` + `data` + `presentation`)
-- [ ] Só `presentation` sobre regras do core
-- [ ] Outra feature vai consumir (precisa de módulo `api`)
-- [ ] Mudança numa feature existente: <!-- qual -->
+- [ ] New feature (`domain` + `data` + `presentation`)
+- [ ] Only `presentation` over core rules
+- [ ] Another feature will consume it (needs an `api` module)
+- [ ] Change to an existing feature: <!-- which one -->
 
-## Telas e estados
+## Screens and states
 
-| Tela | Estados (carregando, dados, vazio, erro...) | Ações |
+| Screen | States (loading, data, empty, error...) | Actions |
 |---|---|---|
 | | | |
 
-## Dados
+## Data
 
-| Fonte | Endpoint ou tabela | Campos usados |
+| Source | Endpoint or table | Fields used |
 |---|---|---|
 | TMDB | `GET ...` | |
 
 ## Analytics
 
-| Evento | Parâmetros | Quando |
+| Event | Parameters | When |
 |---|---|---|
 | | | |
 
-## Textos
+## Texts
 
-<!-- Textos visíveis em pt-BR e en. -->
+<!-- User-facing texts in pt-BR and en. -->
 
-## Critérios de aceite
+## Acceptance criteria
 
 - [ ] ...
-- [ ] `./scripts/verify.sh` passa
+- [ ] `./scripts/verify.sh` passes
 
-## Fora do escopo
+## Out of scope
 
 -
