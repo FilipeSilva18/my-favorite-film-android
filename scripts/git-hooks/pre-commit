@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+blocked_files_regex='(^|/)(local\.properties|google-services\.json|GoogleService-Info\.plist|.*\.jks|.*\.keystore)$'
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[[ -z "$staged" ]] && exit 0
+
+failed=0
+
+blocked=$(printf '%s\n' "$staged" | grep -E "$blocked_files_regex" || true)
+if [[ -n "$blocked" ]]; then
+  echo "Commit blocked: these files must never be versioned:" >&2
+  printf '  %s\n' $blocked >&2
+  failed=1
+fi
+
+secret_patterns=(
+  'eyJhbGciOi[A-Za-z0-9_-]{10,}'
+  'AIza[0-9A-Za-z_-]{35}'
+  'TMDB_ACCESS_TOKEN[[:space:]]*=[[:space:]]*[^[:space:]$"]{20,}'
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+)
+
+added_lines=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude)scripts/git-hooks/pre-commit' | grep -E '^\+[^+]' || true)
+for pattern in "${secret_patterns[@]}"; do
+  if grep -Eq -- "$pattern" <<< "$added_lines"; then
+    echo "Commit blocked: staged changes match a secret pattern: $pattern" >&2
+    failed=1
+  fi
+done
+
+if [[ $failed -ne 0 ]]; then
+  echo >&2
+  echo "Keep tokens in local.properties (ignored) or in CI secrets. Unstage with: git restore --staged <file>" >&2
+  exit 1
+fi
+
+if [[ "${VERIFY_ON_COMMIT:-0}" == "1" ]]; then
+  ./scripts/verify.sh --quick
+fi
