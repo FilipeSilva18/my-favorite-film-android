@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_retry">Tentar novamente</string>
+    <string name="error_network">Sem conexão. Verifique sua internet e tente novamente.</string>
+    <string name="error_unauthorized">Não foi possível autenticar com a TMDB. Confira o TMDB_ACCESS_TOKEN no local.properties.</string>
+    <string name="error_not_found">Conteúdo não encontrado.</string>
+    <string name="error_rate_limited">Muitas requisições em pouco tempo. Aguarde um instante.</string>
+    <string name="error_server">O servidor está com problemas. Tente mais tarde.</string>
+    <string name="error_unknown">Algo deu errado. Tente novamente.</string>
+    <string name="movie_favorite_add">Adicionar aos favoritos</string>
+    <string name="movie_favorite_remove">Remover dos favoritos</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_clear">Limpar</string>
+</resources>
