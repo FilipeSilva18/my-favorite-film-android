@@ -30,8 +30,11 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "MyFavoriteFilms"
 
 include(":core:common")
+include(":core:domain")
+include(":core:data")
 include(":core:network")
 include(":core:database")
 include(":core:datastore")
+include(":core:testing")
 include(":core:analytics")
 include(":core:analytics-firebase")
