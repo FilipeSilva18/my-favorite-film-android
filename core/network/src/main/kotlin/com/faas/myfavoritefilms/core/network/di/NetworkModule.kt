@@ -2,6 +2,7 @@ package com.faas.myfavoritefilms.core.network.di
 
 import com.faas.myfavoritefilms.core.network.BuildConfig
 import com.faas.myfavoritefilms.core.network.TmdbJson
+import com.faas.myfavoritefilms.core.network.interceptor.TmdbAccessToken
 import com.faas.myfavoritefilms.core.network.interceptor.TmdbAuthInterceptor
 import com.faas.myfavoritefilms.core.network.interceptor.TmdbLanguageInterceptor
 import dagger.Module
@@ -23,6 +24,10 @@ internal object NetworkProvidersModule {
     @Provides
     @Singleton
     fun provideJson(): Json = TmdbJson
+
+    @Provides
+    @TmdbAccessToken
+    fun provideTmdbAccessToken(): String = BuildConfig.TMDB_ACCESS_TOKEN
 
     @Provides
     @Singleton

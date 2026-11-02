@@ -18,7 +18,7 @@ class TmdbInterceptorsTest {
     private lateinit var defaultLocale: Locale
 
     private val client = OkHttpClient.Builder()
-        .addInterceptor(TmdbAuthInterceptor())
+        .addInterceptor(TmdbAuthInterceptor(accessToken = TEST_TOKEN))
         .addInterceptor(TmdbLanguageInterceptor())
         .build()
 
@@ -44,9 +44,10 @@ class TmdbInterceptorsTest {
         get("/movie/popular?page=1")
 
         val request = server.takeRequest()
-        assertTrue(request.headers["Authorization"].orEmpty().startsWith("Bearer "))
+        assertEquals("Bearer $TEST_TOKEN", request.headers["Authorization"])
         assertEquals("application/json", request.headers["Accept"])
         assertTrue("token must not be in the URL", "api_key" !in request.url.toString())
+        assertTrue("token must not be in the URL", TEST_TOKEN !in request.url.toString())
     }
 
     @Test
@@ -59,5 +60,9 @@ class TmdbInterceptorsTest {
         assertEquals("pt-BR", url.queryParameter("language"))
         assertEquals("matrix", url.queryParameter("query"))
         assertEquals("2", url.queryParameter("page"))
+    }
+
+    private companion object {
+        const val TEST_TOKEN = "test-read-access-token"
     }
 }
