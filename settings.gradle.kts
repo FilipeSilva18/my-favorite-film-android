@@ -30,6 +30,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "MyFavoriteFilms"
 
 include(":app")
+
 include(":core:common")
 include(":core:domain")
 include(":core:data")
@@ -44,14 +45,19 @@ include(":core:analytics")
 include(":core:analytics-firebase")
 include(":core:ai")
 include(":core:ai-firebase")
+
 include(":feature:movies:domain")
 include(":feature:movies:data")
 include(":feature:movies:presentation")
+
 include(":feature:moviedetail:domain")
 include(":feature:moviedetail:data")
 include(":feature:moviedetail:presentation")
+
 include(":feature:favorites:api")
 include(":feature:favorites:domain")
 include(":feature:favorites:data")
 include(":feature:favorites:presentation")
 include(":feature:settings:presentation")
+
+include(":architecture-test")
