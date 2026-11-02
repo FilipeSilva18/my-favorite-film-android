@@ -1,0 +1,5 @@
+<resources>
+    <string name="nav_movies">Movies</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_settings">Settings</string>
+</resources>

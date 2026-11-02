@@ -29,6 +29,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "MyFavoriteFilms"
 
+include(":app")
 include(":core:common")
 include(":core:domain")
 include(":core:data")
