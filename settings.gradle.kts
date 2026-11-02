@@ -28,3 +28,6 @@ dependencyResolutionManagement {
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "MyFavoriteFilms"
+
+include(":core:common")
+include(":core:network")
