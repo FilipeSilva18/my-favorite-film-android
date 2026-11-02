@@ -1,4 +1,6 @@
 # MyFavoriteFilms
+<img width="601" height="1261" alt="image" src="https://github.com/user-attachments/assets/5cf4b94b-ffaf-47b8-99df-62a21b9e4955" />
+
 
 [![Android CI](https://github.com/FilipeSilva18/my-favorite-film-android/actions/workflows/ci.yml/badge.svg)](https://github.com/FilipeSilva18/my-favorite-film-android/actions/workflows/ci.yml)
 
